@@ -1,18 +1,41 @@
 
 # select a random five letter word that is not a title (a name)
 # ask user for a guess
-# colorize the guess and display it
-#   when letter is a hit in correcdt position colorize green
-#   when letter is a hit in a wrong position colorize orange
-#   when letter is a miss colorize red
+# remember all guesses
 #
-# score keeping:
-#    
+# clear terminal between guesses and display full history each time
+#
+# quit on empty guess input
+
+# once user guessed the right word start over:
+#   select new random secret and clear all previous data
+#
+# colorize user guess and display it
+#   walk the five letter index
+#     check secret word,
+#     check the user guess
+#       when letter is a hit in the correct position colorize it green,
+#         keep score: 1
+#       when letter is a hit in a wrong position colorize it orange,
+#         keep score: 0
+#       when letter is a miss colorize it red,
+#         keep score: -1
+#
+#  colorize the keyboard in the same manner and display it
+#
+# duplicate latters
+#   when a leeter is present in the word twice colorize two letters in the guess
+#   TODO not completed!!!
+# 
+# score keeping + colors
+#    keep a list of five scores (0-4), the array index represents letter index in the word
+#    walk the user guess and the score list and colorize user guess for output
+#      walk the keyboard,
+#        walk the user guess,
+#          walk the score list
+#            colorize each keyboard letter for output
+#
 # return to user for next guess
-
-
-
-
 
 import random
 from nltk.corpus import words
