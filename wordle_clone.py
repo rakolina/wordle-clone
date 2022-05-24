@@ -53,30 +53,57 @@ from nltk.corpus import words
 from nltk.tag import pos_tag
 from os import system
 
-class color:
+class letter_color:
    GREEN = '\033[92m'
    YELLOW = '\033[93m'
    RED = '\033[91m'
    END = '\033[0m'
+   
+class letter_score:
+    HIT = 'green'
+    MISS = 'yellow'
+    RED = 'red'
     
+print(" Welcome to infinite wordle!")
+print(" Type five letter guesses to play")
+print(" Hit enter to quit")
 
 wordlist = words.words()
-alphabet = ['q','w','e','r','t','y','u','i','o','p',
-            'a','s','d','f','g','h','j','k','l',
-            'z','x','c','v','b','n','m']
-guesses = []
 
-def print_alphabet (guesses):
-    for (guess, score) in guesses:
-        for s in range (len (score)):
-            if s == '0':
+keyboard = [['q','w','e','r','t','y','u','i','o','p'],
+            ['a','s','d','f','g','h','j','k','l'],
+            ['z','x','c','v','b','n','m']]
+
+guesses_scores = []
+
+# colorize letter
+def colorize_letter (letter, color):
+    if ( letter_score.RED == color ):
+        return color.RED + letter + color.END
+    if (letter_score.MISS = color ):
+        return color.YELLOW + letter + color.END
+    if ( letter_score.HIT == color ):
+        return color.GREEN + letter + color.END
+        
+    
+# walk the list of scored guesses
+#   walk keyboaard letters by row
+#     color keyboard letters
+colorized_keyboard = []
+def show_colorized_keyboard (guesses_scores):
+    for (guess, score) in guesses_scores:
+        colorized_keyboard_row = []
+        for keyboard_row in keyboard:
+            for letter in keyboard_row:
+                for i in range (len (score)):
+                    if score [i] == '1' and letter == guess [i]:
+                        colorized_keyboard_row.append ( colorize_letter (letter, letter_score.HIT))
+                        
                 
-
-
-def print_guess (guesses):
-    (guess_word, score) = guesses [-1]
+def print_guess (guesses_scores):
+    (guess_word, score) = guesses_scores [-1]
     guess_word_letters = list (guess_word)
-    for i in range (5):
+    for i in range ( len (score)):
         if score[i] == 0:
             print (color.RED + guess_word_letters[i] + color.END, end = ' ')
         if score[i] == 1:
