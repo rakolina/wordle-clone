@@ -1,13 +1,24 @@
 
-# select a random five letter word that is not a title (a name)
-# ask user for a guess
-# remember all guesses
-#
-# clear terminal between guesses and display full history each time
-#
+# Infinite wordle (no guess limit)
+# select a random five letter secret word that is not a title (a name)
+# keep asking the user for a valid guess until you get one
+# display scored guess
+# display scored keyboard
 # quit on empty guess input
-
-# once user guessed the right word start over:
+# when secret is found, ask to continue
+# if yes start over
+# if no - dump game stats and quit
+#
+# TODO Next:
+# letter hints,
+# total game score (user : computer score),
+#
+# remember all guesses
+# Consider:
+#   clear terminal between guesses and display full history each time
+#
+#
+# once user guesses secret start over:
 #   select new random secret and clear all previous data
 #
 # colorize user guess and display it
@@ -47,7 +58,7 @@ class color:
    YELLOW = '\033[93m'
    RED = '\033[91m'
    END = '\033[0m'
-   
+    
 
 wordlist = words.words()
 alphabet = ['q','w','e','r','t','y','u','i','o','p',
