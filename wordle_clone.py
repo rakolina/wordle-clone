@@ -35,7 +35,7 @@
 #  colorize the keyboard in the same manner and display it
 #
 # duplicate latters
-#   when a leeter is present in the word twice colorize two letters in the guess
+#   when a letter is present in the word twice colorize two letters in the guess
 #   TODO not completed!!!
 # 
 # score keeping + colors
