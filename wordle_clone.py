@@ -149,13 +149,13 @@ def display_game_stats ( secret_word, guess_word ):
 
 
 def user_wants_to_continue ():
-    continue_game = input ( "Continue? (Y): " )
+    continue_game = input ( "Again? (y)/n: " )
     return continue_game in [ "", "Y", "y" ]
 
 
 def finish ():
-
     print ( "Game score: ", user_score, ":", robot_score )
+    print ( "Bye! Play again soon! " )
     quit ( )
 
 
@@ -177,29 +177,3 @@ while True:
 ################################################################
 ################################################################
 
-
-# make a list of letters
-secret_word_letters = list ( secret_word )
-print ( secret_word_letters )
-
-score = [ 0, 0, 0, 0, 0 ]
-while 0 in score or 1 in score:
-    guess_word = input ( "Guess a five letter word: " )
-    if guess_word == '':
-        print ( "The secret was: ", random_word_letters )
-        print ( "Bye!" )
-        exit ( )
-
-    while (len ( guess_word ) != 5 or guess_word not in wordlist or guess_word.istitle ( )):
-        print ( "Please type a valid 5 letter word" )
-        guess_word = input ( "Try again: " )
-
-    guess_word_letters = list ( guess_word )
-    score = [ 0, 0, 0, 0, 0 ]
-    for i in range ( 5 ):
-        if guess_word_letters [ i ] == random_word_letters [ i ]:
-            score [ i ] = 2
-        elif guess_word_letters [ i ] in random_word_letters:
-            score [ i ] = 1
-        else:
-            score [ i ] = 0
