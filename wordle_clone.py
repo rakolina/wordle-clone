@@ -1,5 +1,4 @@
-
-# Infinite wordle (no guess limit)
+# Infinite wordle (no daily limit)
 # select a random five letter secret word that is not a title (a name)
 # keep asking the user for a valid guess (5 letters)
 # display scored guess
@@ -45,92 +44,151 @@
 #
 # return to user for next guess
 
-import random
+import random, nltk
 from nltk.corpus import words
 from nltk.tag import pos_tag
 from os import system
 
+
 class letter_color:
-   GREEN = '\033[92m'
-   YELLOW = '\033[93m'
-   RED = '\033[91m'
-   END = '\033[0m'
-   
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    END = '\033[0m'
+
+
 class letter_score:
     HIT = 'green'
     MISS = 'yellow'
     RED = 'red'
-    
-print(" Welcome to infinite wordle!")
-print(" Type five letter guesses to play")
-print(" Hit enter to quit")
 
-wordlist = words.words()
 
-keyboard = [['q','w','e','r','t','y','u','i','o','p'],
-            ['a','s','d','f','g','h','j','k','l'],
-            ['z','x','c','v','b','n','m']]
+wordlist = words.words ( )
 
-guesses_scores = []
+keyboard = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
+             [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
+             [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
+
+guesses_scores = [ ]
+
 
 # colorize letter
-def colorize_letter (letter, color):
+def colorize_letter ( letter, color ):
     if ( letter_score.RED == color ):
         return color.RED + letter + color.END
-    if ( letter_score.MISS = color ):
+    if ( letter_score.MISS == color ):
         return color.YELLOW + letter + color.END
     if ( letter_score.HIT == color ):
         return color.GREEN + letter + color.END
-        
-    
+
+
 # walk the list of scored guesses
 #   walk keyboard letters by row
 #     color keyboard letters
 def show_colorized_keyboard ( guesses_scores ):
-    colorized_keyboard = []
+    colorized_keyboard = [ ]
     for ( guess, score ) in guesses_scores:
-        colorized_keyboard_row = []
+        colorized_keyboard_row = [ ]
         for keyboard_row in keyboard:
             for letter in keyboard_row:
                 for i in range ( len ( score ) ):
                     if score [ i ] == '1' and letter == guess [ i ]:
                         colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
-                        
-                
-def print_guess ( guesses_scores ):
-    ( guess_word, score ) = guesses_scores [ -1 ]
-    guess_word_letters = list ( guess_word )
-    for i in range ( len ( score ) ):
-        if score [ i ] == 0:
-            print ( color.RED + guess_word_letters[i] + color.END, end = ' ' )
-        if score [ i ] == 1:
-            print ( color.YELLOW + guess_word_letters[i] + color.END, end = ' ' )
-        if score [ i ] == 2:
-            print ( color.GREEN + guess_word_letters[i] + color.END, end = ' ' ) 
-    print()
 
-       
-counter = 0
-random_word = random.choice ( wordlist ) 
-while ( len ( random_word ) != 5 or random_word.istitle() ):
-    counter += 1
-    random_word = random.choice ( wordlist )
 
-random_word_letters = list ( random_word )
-print ( random_word_letters) 
+# select a random five letter secret
+# keep count how many tries to find it in the NLP data struct            
+def pick_secret_word ():
+    counter = 0
+    secret_word = random.choice ( wordlist )
+    while (len ( secret_word ) != 5 or secret_word.istitle ( )):
+        counter += 1
+        secret_word = random.choice ( wordlist )
+    return secret_word
 
-score = [ 0,0,0,0,0 ]
+
+def is_game_over ( secret_word, user_guess ):
+    game_over = ( secret_word and user_guess and secret_word == user_guess )
+    return game_over
+
+
+def ask_user_for_guess ():
+    guess_word = input ( "Your guess: " )
+    if not guess_word:
+        if not does_user_want_to_continue ( ):
+            finish ( )
+
+    while ( 5 != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ) ):
+        guess_word = input ( "Try again: " )
+    return guess_word
+
+
+def show_word ( word ):
+    if word and 0 < len ( word ):
+        return list ( word )
+    else:
+        return []
+
+def display_game_stats ( secret_word, guess_word ):
+    # show as a list of letters
+    if not secret_word or not guess_word:
+        print ( "Something is very wrong" )
+        exit ( )
+    print ( show_word ( secret_word ) )
+    print ( show_word( guess_word ) )
+
+
+def user_wants_to_continue ():
+    continue_game = input ( "Continue? (Y): " )
+    return continue_game in [ "", "Y", "y" ]
+
+
+def finish ():
+
+    print ( "Game score: ", user_score, ":", robot_score )
+    quit ( )
+
+
+################################################################
+############################# MAIN #############################
+################################################################
+
+print ( " Welcome to infinite wordle!" )
+
+guesses = [ ]
+user_score = 0
+robot_score = 0
+
+while True:
+    secret_word = pick_secret_word ( )
+    user_guess = ""
+    while not is_game_over( secret_word, user_guess ):
+        user_guess = ask_user_for_guess ( )
+        display_game_stats ( secret_word, user_guess )
+    if not user_wants_to_continue ( ):
+        finish ( )
+
+################################################################
+################################################################
+################################################################
+
+
+# make a list of letters
+secret_word_letters = list ( secret_word )
+print ( secret_word_letters )
+
+score = [ 0, 0, 0, 0, 0 ]
 while 0 in score or 1 in score:
     guess_word = input ( "Guess a five letter word: " )
     if guess_word == '':
         print ( "The secret was: ", random_word_letters )
         print ( "Bye!" )
-        exit()
-    
-    while ( len ( guess_word ) != 5 or guess_word not in wordlist or guess_word.istitle () ):
+        exit ( )
+
+    while (len ( guess_word ) != 5 or guess_word not in wordlist or guess_word.istitle ( )):
         print ( "Please type a valid 5 letter word" )
         guess_word = input ( "Try again: " )
-    
+
     guess_word_letters = list ( guess_word )
     score = [ 0, 0, 0, 0, 0 ]
     for i in range ( 5 ):
@@ -140,13 +198,3 @@ while 0 in score or 1 in score:
             score [ i ] = 1
         else:
             score [ i ] = 0
-    guess = ( guess_word, score ) 
-    guesses.append ( guess )
-    print_guess ( guesses )
-    print_alphabet ( guesses )
-
-#system('clear')
-
-    
-        
-    
