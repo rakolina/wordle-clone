@@ -69,7 +69,12 @@ keyboard = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
              [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
 
-guesses_scores = [ ]
+global guesses
+guesses = []
+global user_score
+user_score = 0
+global robot_score
+robot_score = 0
 
 
 # colorize letter
@@ -109,13 +114,18 @@ def pick_secret_word ():
 
 def is_game_over ( secret_word, user_guess ):
     game_over = ( secret_word and user_guess and secret_word == user_guess )
+    if game_over:
+        global user_score
+        user_score = user_score + 1
     return game_over
 
 
 def ask_user_for_guess ():
     guess_word = input ( "Your guess: " )
     if not guess_word:
-        if not does_user_want_to_continue ( ):
+        global robot_score
+        robot_score = robot_score + 1
+        if not user_wants_to_continue ( ):
             finish ( )
 
     while ( 5 != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ) ):
@@ -133,9 +143,9 @@ def display_game_stats ( secret_word, guess_word ):
     # show as a list of letters
     if not secret_word or not guess_word:
         print ( "Something is very wrong" )
-        exit ( )
-    print ( show_word ( secret_word ) )
-    print ( show_word( guess_word ) )
+        quit ( )
+    print ( "Secret:  ", show_word ( secret_word ) )
+    print ( "Guessed: ", show_word ( guess_word ) )
 
 
 def user_wants_to_continue ():
@@ -154,11 +164,6 @@ def finish ():
 ################################################################
 
 print ( " Welcome to infinite wordle!" )
-
-guesses = [ ]
-user_score = 0
-robot_score = 0
-
 while True:
     secret_word = pick_secret_word ( )
     user_guess = ""
