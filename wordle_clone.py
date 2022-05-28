@@ -1,7 +1,7 @@
 
 # Infinite wordle (no guess limit)
 # select a random five letter secret word that is not a title (a name)
-# keep asking the user for a valid guess until you get one
+# keep asking the user for a valid guess (5 letters)
 # display scored guess
 # display scored keyboard
 # quit on empty guess input
@@ -10,16 +10,16 @@
 # if no - dump game stats and quit
 #
 # TODO Next:
-# letter hints,
-# total game score (user : computer score),
+# 1 total game score (user : computer),
+# 2 clear terminal between guesses and display full history each time
+# 3 duplicate letters
+#   when a letter is present in the word twice then colorize at most two duplicate letters in the guess
+#   if three letters - colorize at most three
 #
-# remember all guesses
-# Consider:
-#   clear terminal between guesses and display full history each time
-#
+# remember all guesses and scores
 #
 # once user guesses secret start over:
-#   select new random secret and clear all previous data
+# select new random secret and clear all previous data
 #
 # colorize user guess and display it
 #   walk the five letter index
@@ -34,9 +34,6 @@
 #
 #  colorize the keyboard in the same manner and display it
 #
-# duplicate latters
-#   when a letter is present in the word twice colorize two letters in the guess
-#   TODO not completed!!!
 # 
 # score keeping + colors
 #    keep a list of five scores (0-4), the array index represents letter index in the word
@@ -80,72 +77,73 @@ guesses_scores = []
 def colorize_letter (letter, color):
     if ( letter_score.RED == color ):
         return color.RED + letter + color.END
-    if (letter_score.MISS = color ):
+    if ( letter_score.MISS = color ):
         return color.YELLOW + letter + color.END
     if ( letter_score.HIT == color ):
         return color.GREEN + letter + color.END
         
     
 # walk the list of scored guesses
-#   walk keyboaard letters by row
+#   walk keyboard letters by row
 #     color keyboard letters
-colorized_keyboard = []
-def show_colorized_keyboard (guesses_scores):
-    for (guess, score) in guesses_scores:
+def show_colorized_keyboard ( guesses_scores ):
+    colorized_keyboard = []
+    for ( guess, score ) in guesses_scores:
         colorized_keyboard_row = []
         for keyboard_row in keyboard:
             for letter in keyboard_row:
-                for i in range (len (score)):
-                    if score [i] == '1' and letter == guess [i]:
-                        colorized_keyboard_row.append ( colorize_letter (letter, letter_score.HIT))
+                for i in range ( len ( score ) ):
+                    if score [ i ] == '1' and letter == guess [ i ]:
+                        colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
                         
                 
-def print_guess (guesses_scores):
-    (guess_word, score) = guesses_scores [-1]
-    guess_word_letters = list (guess_word)
-    for i in range ( len (score)):
-        if score[i] == 0:
-            print (color.RED + guess_word_letters[i] + color.END, end = ' ')
-        if score[i] == 1:
-            print (color.YELLOW + guess_word_letters[i] + color.END, end = ' ')
-        if score[i] == 2:
-            print (color.GREEN + guess_word_letters[i] + color.END, end = ' ')
+def print_guess ( guesses_scores ):
+    ( guess_word, score ) = guesses_scores [ -1 ]
+    guess_word_letters = list ( guess_word )
+    for i in range ( len ( score ) ):
+        if score [ i ] == 0:
+            print ( color.RED + guess_word_letters[i] + color.END, end = ' ' )
+        if score [ i ] == 1:
+            print ( color.YELLOW + guess_word_letters[i] + color.END, end = ' ' )
+        if score [ i ] == 2:
+            print ( color.GREEN + guess_word_letters[i] + color.END, end = ' ' ) 
     print()
 
        
 counter = 0
-random_word = random.choice (wordlist)
-while (len (random_word) !=5 or random_word.istitle()):
+random_word = random.choice ( wordlist ) 
+while ( len ( random_word ) != 5 or random_word.istitle() ):
     counter += 1
-    random_word = random.choice (wordlist)
+    random_word = random.choice ( wordlist )
 
-random_word_letters = list (random_word)
-print (random_word_letters)
+random_word_letters = list ( random_word )
+print ( random_word_letters) 
 
-score = [0,0,0,0,0]
+score = [ 0,0,0,0,0 ]
 while 0 in score or 1 in score:
-    guess_word = input("Guess a five letter word: ")
+    guess_word = input ( "Guess a five letter word: " )
     if guess_word == '':
-        print ("The word was: ", random_word_letters)
-        print ("Bye")
+        print ( "The secret was: ", random_word_letters )
+        print ( "Bye!" )
         exit()
     
-    while (len (guess_word) !=5 or guess_word not in wordlist):
-        guess_word = input("Try again: ")
+    while ( len ( guess_word ) != 5 or guess_word not in wordlist or guess_word.istitle () ):
+        print ( "Please type a valid 5 letter word" )
+        guess_word = input ( "Try again: " )
     
-    guess_word_letters = list(guess_word)
-    score = [0, 0, 0, 0, 0]
-    for i in range(5):
-        if guess_word_letters[i] == random_word_letters[i]:
-            score[i] = 2
-        elif guess_word_letters[i] in random_word_letters:
-            score[i] = 1
+    guess_word_letters = list ( guess_word )
+    score = [ 0, 0, 0, 0, 0 ]
+    for i in range ( 5 ):
+        if guess_word_letters [ i ] == random_word_letters [ i ]:
+            score [ i ] = 2
+        elif guess_word_letters [ i ] in random_word_letters:
+            score [ i ] = 1
         else:
-            score[i] = 0
-    guess = (guess_word, score)
-    guesses.append (guess)
-    print_guess (guesses)
-    print_alphabet (guesses)
+            score [ i ] = 0
+    guess = ( guess_word, score ) 
+    guesses.append ( guess )
+    print_guess ( guesses )
+    print_alphabet ( guesses )
 
 #system('clear')
 
