@@ -49,6 +49,8 @@ from nltk.corpus import words
 from nltk.tag import pos_tag
 from os import system
 
+MAX = 5
+
 
 class letter_color:
     GREEN = '\033[92m'
@@ -57,20 +59,23 @@ class letter_color:
     END = '\033[0m'
 
 
-class letter_score:
-    HIT = 'green'
-    MISS = 'yellow'
-    RED = 'red'
+# class letter_score:
+#     HIT = 'green'
+#     MISS = 'yellow'
+#     RED = 'red'
 
 
 wordlist = words.words ( )
 
-keyboard = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
+KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
              [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
 
+# remmeber all user guesses in current round
 global guesses
-guesses = []
+guesses = [ ]
+
+# keep total score across all games
 global user_score
 user_score = 0
 global robot_score
@@ -87,18 +92,26 @@ def colorize_letter ( letter, color ):
         return color.GREEN + letter + color.END
 
 
-# walk the list of scored guesses
-#   walk keyboard letters by row
-#     color keyboard letters
-def show_colorized_keyboard ( guesses_scores ):
+
+# walk keyboard rows
+#   walk letters in keyboard row
+#     colorize keyboard letters
+#       walk the list of guesses
+def show_colorized_keyboard ( secret_word, guesses ):
+
+    if not secret_word or not guesses:
+        print ( "Something is very wrong in show colorized keyboard" )
+        quit ( )
+
     colorized_keyboard = [ ]
-    for ( guess, score ) in guesses_scores:
+    for keyboard_row in KEYBOARD:
         colorized_keyboard_row = [ ]
-        for keyboard_row in keyboard:
-            for letter in keyboard_row:
-                for i in range ( len ( score ) ):
-                    if score [ i ] == '1' and letter == guess [ i ]:
-                        colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
+        for keyboard_letter in keyboard_row:
+            for guess in guesses:
+                for guess_letter in guess:
+
+          colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
+        colorized_keyboard.insert ( colorized_keyboard_row )
 
 
 # select a random five letter secret
@@ -112,6 +125,7 @@ def pick_secret_word ():
     return secret_word
 
 
+# user guessed secret - increment user score
 def is_game_over ( secret_word, user_guess ):
     game_over = ( secret_word and user_guess and secret_word == user_guess )
     if game_over:
@@ -120,6 +134,7 @@ def is_game_over ( secret_word, user_guess ):
     return game_over
 
 
+# when user enters empty word score goes to robot
 def ask_user_for_guess ():
     guess_word = input ( "Your guess: " )
     if not guess_word:
@@ -128,16 +143,20 @@ def ask_user_for_guess ():
         if not user_wants_to_continue ( ):
             finish ( )
 
-    while ( 5 != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ) ):
+    while ( MAX != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ) ):
         guess_word = input ( "Try again: " )
+
+    global guesses
+    guesses.insert ( guess_word )
     return guess_word
 
 
 def show_word ( word ):
-    if word and 0 < len ( word ):
+    if ( word and MAX == len ( word ) ) :
         return list ( word )
     else:
-        return []
+        print ( "Something is very wrong in show word function" )
+        quit ( )
 
 def display_game_stats ( secret_word, guess_word ):
     # show as a list of letters
@@ -145,7 +164,8 @@ def display_game_stats ( secret_word, guess_word ):
         print ( "Something is very wrong" )
         quit ( )
     print ( "Secret:  ", show_word ( secret_word ) )
-    print ( "Guessed: ", show_word ( guess_word ) )
+    print ( "Guess:   ", show_word ( guess_word ) )
+    show_colorized_keyboard ( secret_word, guesses )
 
 
 def user_wants_to_continue ():
@@ -154,8 +174,14 @@ def user_wants_to_continue ():
 
 
 def finish ():
+    if ( user_score > robot_score ):
+        print ( "You won!" )
+    elif ( user_score == robot_score ):
+        print ( "It is a tie!" )
+    else
+        print ( "You lost." )
     print ( "Game score: ", user_score, ":", robot_score )
-    print ( "Bye! Play again soon! " )
+    print ( "Bye! Play again soon!" )
     quit ( )
 
 
@@ -163,13 +189,16 @@ def finish ():
 ############################# MAIN #############################
 ################################################################
 
-print ( " Welcome to infinite wordle!" )
+print ( "Welcome to infinite wordle!" )
 while True:
-    secret_word = pick_secret_word ( )
+    guesses = [ ]
     user_guess = ""
-    while not is_game_over( secret_word, user_guess ):
+    secret_word = pick_secret_word ( )
+
+    while not is_game_over ( secret_word, user_guess ):
         user_guess = ask_user_for_guess ( )
         display_game_stats ( secret_word, user_guess )
+
     if not user_wants_to_continue ( ):
         finish ( )
 
