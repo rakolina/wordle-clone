@@ -51,7 +51,7 @@ from nltk.corpus import words
 from nltk.tag import pos_tag
 from os import system
 
-MAX = 5
+WORD_LENGTH = 5
 
 
 class Colorize:
@@ -70,10 +70,6 @@ wordlist = words.words ( )
 KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
              [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
-
-# remember all user guesses in current round
-global user_guesses
-user_guesses = [ ]
 
 # keep total game score across all games
 global user_score
@@ -139,18 +135,18 @@ def score_one_guess ( secret_word, guess_word ):
         print ( "Something is very wrong in score one guess method" )
         quit ( )
 
-    for i in range ( MAX ):
+    for i in range ( WORD_LENGTH ):
         if secret_word [ i ] not in letter_occurence:
             letter_occurence [ secret_word [ i ] ] = 1
         else:
             letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] + 1
 
     user_guess_score = { }
-    for i in range ( MAX ):
+    for i in range ( WORD_LENGTH ):
         if secret_word [ i ] == guess_word [ i ] and letter_occurence [ secret_word [ i ] ] > 0:
             user_guess_score [ i ] = Score.HIT
             letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] - 1
-        elif guess_word [ i ] in secret_word and letter_occurence [ i ] > 0:
+        elif guess_word [ i ] in secret_word and letter_occurence [ secret_word [ i ] ] > 0:
             user_guess_score [ i ] = Score.MISS
             letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] - 1
         else:
@@ -177,14 +173,14 @@ def ask_user_for_guess ():
         if not user_wants_to_continue ( ):
             finish ( )
 
-    while MAX != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ):
+    while WORD_LENGTH != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ):
         guess_word = input ( "Try again: " )
 
     return guess_word
 
 
 def show_word ( word ):
-    if word and MAX == len ( word ):
+    if word and WORD_LENGTH == len ( word ):
         return list ( word )
     else:
         print ( "Something is very wrong in show word function" )
