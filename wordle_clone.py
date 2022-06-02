@@ -52,7 +52,7 @@ from nltk.tag import pos_tag
 from os import system
 
 WORD_LENGTH = 5
-
+DEBUG = 1
 
 class Colorize:
     GREEN = '\033[92m'
@@ -60,12 +60,14 @@ class Colorize:
     RED = '\033[91m'
     END = '\033[0m'
 
+
 class Score:
     HIT = 2
     MISS = 1
     FAIL = 0
 
-wordlist = words.words ( )
+
+ALL_WORDS = words.words ( )
 
 KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
@@ -90,12 +92,25 @@ def colorize_one_letter ( letter, score ):
         print ( "Something is very wrong in colorize one letter method" )
         quit ( )
 
+
+def show_colorized_guess ( guess, score ):
+    for l in range ( WORD_LENGTH ):
+        if Score.HIT == score [ i ]:
+            print ( colorize_one_letter ( guess [ i ], Colorize.GREEN ) )
+        elif Score.MISS == score [ i ]:
+            print ( colorize_one_letter ( guess [ i ], Colorize.YELLOW ) )
+        elif Score.FAIL == score [ i ]:
+            print ( colorize_one_letteer ( guess [ i ], Colorize.RED ) )
+        else:
+            print ( "Something went very wrong in show colorized guess method" )
+            quit ( )
+
+
 # walk keyboard rows
 #   walk letters in keyboard row
 #     colorize keyboard letters
 #       walk the list of guesses
 def show_colorized_keyboard ( secret_word, scored_guesses ):
-
     if not secret_word or not scored_guesses:
         print ( "Something is very wrong in show colorized keyboard" )
         quit ( )
@@ -106,7 +121,7 @@ def show_colorized_keyboard ( secret_word, scored_guesses ):
         for keyboard_letter in keyboard_row:
             for guess in user_guesses:
                 for guess_letter in guess:
-                    if ( keyboard_letter == guess_letter ):
+                    if keyboard_letter == guess_letter:
                         quit ( )
         #   colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
         # colorized_keyboard.insert ( colorized_keyboard_row )
@@ -117,10 +132,13 @@ def show_colorized_keyboard ( secret_word, scored_guesses ):
 # keep count how many tries to find it in the NLP data struct            
 def pick_secret_word ():
     counter = 0
-    secret_word = random.choice ( wordlist )
+    if 1 == DEBUG:
+        return "train"
+
+    secret_word = random.choice ( ALL_WORDS )
     while len ( secret_word ) != 5 or secret_word.istitle ( ):
         counter += 1
-        secret_word = random.choice ( wordlist )
+        secret_word = random.choice ( ALL_WORDS )
 
     print ( "Stats for nerds: picking a secret took ", counter, " tries" )
     return secret_word.lower ( )
@@ -128,27 +146,26 @@ def pick_secret_word ():
 
 # handle duplicated letters - version 2
 def score_one_guess ( secret_word, guess_word ):
-
-    letter_occurence = { }
+    letter_occurrence = { }
 
     if not secret_word or not guess_word:
         print ( "Something is very wrong in score one guess method" )
         quit ( )
 
     for i in range ( WORD_LENGTH ):
-        if secret_word [ i ] not in letter_occurence:
-            letter_occurence [ secret_word [ i ] ] = 1
+        if secret_word [ i ] not in letter_occurrence:
+            letter_occurrence [ secret_word [ i ] ] = 1
         else:
-            letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] + 1
+            letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] + 1
 
     user_guess_score = { }
     for i in range ( WORD_LENGTH ):
-        if secret_word [ i ] == guess_word [ i ] and letter_occurence [ secret_word [ i ] ] > 0:
+        if secret_word [ i ] == guess_word [ i ] and letter_occurrence [ secret_word [ i ] ] > 0:
             user_guess_score [ i ] = Score.HIT
-            letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] - 1
-        elif guess_word [ i ] in secret_word and letter_occurence [ secret_word [ i ] ] > 0:
+            letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
+        elif guess_word [ i ] in secret_word and letter_occurrence [ secret_word [ i ] ] > 0:
             user_guess_score [ i ] = Score.MISS
-            letter_occurence [ secret_word [ i ] ] = letter_occurence [ secret_word [ i ] ] - 1
+            letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
         else:
             user_guess_score [ i ] = Score.FAIL
 
@@ -156,8 +173,8 @@ def score_one_guess ( secret_word, guess_word ):
 
 
 # user guessed secret - increment user score
-def is_game_over ( secret_word, user_guess ):
-    game_over = ( secret_word and user_guess and secret_word == user_guess )
+def is_game_over ( secret, guess ):
+    game_over = (secret and guess and secret == guess)
     if game_over:
         global user_score
         user_score = user_score + 1
@@ -173,7 +190,7 @@ def ask_user_for_guess ():
         if not user_wants_to_continue ( ):
             finish ( )
 
-    while WORD_LENGTH != len ( guess_word ) or guess_word not in wordlist or guess_word.istitle ( ):
+    while WORD_LENGTH != len ( guess_word ) or guess_word not in ALL_WORDS or guess_word.istitle ( ):
         guess_word = input ( "Try again: " )
 
     return guess_word
@@ -186,15 +203,18 @@ def show_word ( word ):
         print ( "Something is very wrong in show word function" )
         quit ( )
 
-def display_game_stats ( secret_word, scored_guesses ):
+
+def display_game_stats ( secret, guesses ):
     # show as a list of letters
-    if not secret_word or not scored_guesses:
+    if not secret or not guesses:
         print ( "Something is very wrong in display game stats method" )
         quit ( )
 
-    # print ( "Secret:  ", show_word ( secret_word ) )
-    # print ( "Guess:   ", show_word ( guess_word ) )
-    # show_colorized_keyboard ( secret_word, guesses )
+    print ( "Secret:  ", show_word ( secret ) )
+    print ( "Guess:   ", show_word ( list ( guesses ) [ -1 ] ) )
+    last_key = list ( guesses ) [ -1 ]
+    show_colorized_guess ( guesses [ last_key ] ) # last added dictionary key is our current user guess
+    show_colorized_keyboard ( secret, guesses )
 
 
 def user_wants_to_continue ():
@@ -221,14 +241,14 @@ def finish ():
 print ( "Welcome to infinite wordle!" )
 while True:
 
-    all_guesses = { }
+    scored_guesses = { }
     user_guess = ""
     game_secret = pick_secret_word ( )
 
     while not is_game_over ( game_secret, user_guess ):
         user_guess = ask_user_for_guess ( )
-        all_guesses [ user_guess ] = score_one_guess ( game_secret, user_guess )
-        display_game_stats ( game_secret, all_guesses )
+        scored_guesses [ user_guess ] = score_one_guess ( game_secret, user_guess )
+        display_game_stats ( game_secret, scored_guesses )
 
     if not user_wants_to_continue ( ):
         finish ( )
@@ -236,4 +256,3 @@ while True:
 ################################################################
 ################################################################
 ################################################################
-
