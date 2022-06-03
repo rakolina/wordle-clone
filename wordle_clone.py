@@ -54,6 +54,7 @@ from os import system
 WORD_LENGTH = 5
 DEBUG = 1
 
+
 class Colorize:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -81,50 +82,48 @@ robot_score = 0
 
 
 # colorize letter
-def colorize_one_letter ( letter, score ):
-    if Score.FAIL == score:
-        return Colorize.RED + letter + Colorize.END
-    elif Score.MISS == score:
-        return Colorize.YELLOW + letter + Colorize.END
-    elif Score.HIT == score:
-        return Colorize.GREEN + letter + CoColorizelor.END
-    else:
-        print ( "Something is very wrong in colorize one letter method" )
-        quit ( )
-
-
 def show_colorized_guess ( guess, score ):
-    for l in range ( WORD_LENGTH ):
+    for i in range ( WORD_LENGTH ):
         if Score.HIT == score [ i ]:
-            print ( colorize_one_letter ( guess [ i ], Colorize.GREEN ) )
+            print ( Colorize.GREEN + guess [ i ] + Colorize.END, end = " " )
         elif Score.MISS == score [ i ]:
-            print ( colorize_one_letter ( guess [ i ], Colorize.YELLOW ) )
+            print ( Colorize.YELLOW + guess [ i ] + Colorize.END, end = " " )
         elif Score.FAIL == score [ i ]:
-            print ( colorize_one_letteer ( guess [ i ], Colorize.RED ) )
+            print ( Colorize.RED + guess [ i ] + Colorize.END, end = " " )
         else:
             print ( "Something went very wrong in show colorized guess method" )
             quit ( )
 
 
-# walk keyboard rows
-#   walk letters in keyboard row
-#     colorize keyboard letters
-#       walk the list of guesses
-def show_colorized_keyboard ( secret_word, scored_guesses ):
-    if not secret_word or not scored_guesses:
+# colorize letters green and orange based only on the latest guess
+# colorize red based on all of the guesses
+# Example guesses entry: { 'guess' : { 0:1, 1:0, 2:0, 3:0, 4:0 } }
+TODO need a better letter scoe lookup to colorize the keyboard
+def show_colorized_keyboard ( secret, guesses ):
+    if not secret or not guesses:
         print ( "Something is very wrong in show colorized keyboard" )
         quit ( )
 
-    colorized_keyboard = [ ]
+    total_letter_scores = { }
+    for guess in guesses:
+        for guess_letter in guess:
+            if guess_letter not in total_letter_scores:
+                total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
+            else:
+                if total_letter_scores [ guess_letter ] <  guesses [ guess ] [ i ]:
+                    total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
+
+    # colorized_keyboard = [ ]
     for keyboard_row in KEYBOARD:
         colorized_keyboard_row = [ ]
         for keyboard_letter in keyboard_row:
-            for guess in user_guesses:
-                for guess_letter in guess:
-                    if keyboard_letter == guess_letter:
-                        quit ( )
-        #   colorized_keyboard_row.append ( colorize_letter ( letter, letter_score.HIT ) )
-        # colorized_keyboard.insert ( colorized_keyboard_row )
+            if total_letter_scores [ keyboard_letter ] == Score.HIT:
+                colorized_keyboard_row.append ( Colorize.GREEN + keyboard_letter + Colorize.END )
+            elif total_letter_scores [ keyboard_letter ] == Score.MISS:
+                colorized_keyboard_row.append ( Colorize.YELLOW + keyboard_letter + Colorize.END )
+            elif total_letter_scores [ keyboard_letter ] == Score.FAIL:
+                colorized_keyboard_row.append ( Colorize.RED + keyboard_letter + Colorize.END )
+        print ( colorized_keyboard_row )
 
 
 # select a random five letter secret
@@ -133,7 +132,8 @@ def show_colorized_keyboard ( secret_word, scored_guesses ):
 def pick_secret_word ():
     counter = 0
     if 1 == DEBUG:
-        return "train"
+        # return "aurei"
+        return "ourie"
 
     secret_word = random.choice ( ALL_WORDS )
     while len ( secret_word ) != 5 or secret_word.istitle ( ):
@@ -145,6 +145,8 @@ def pick_secret_word ():
 
 
 # handle duplicated letters - version 2
+# count letter occurrences in the secret word
+# and keep track of colorized letters that match in the user guess
 def score_one_guess ( secret_word, guess_word ):
     letter_occurrence = { }
 
@@ -204,6 +206,9 @@ def show_word ( word ):
         quit ( )
 
 
+# store scored guesses in a dictionary with guess word as key and list of scores by letter index as value
+# python dictionary keys are ordered as of python 3.6 (3.7)
+# This is against the principle of a set (unordered!), but it is very useful to have this additional index
 def display_game_stats ( secret, guesses ):
     # show as a list of letters
     if not secret or not guesses:
@@ -213,7 +218,8 @@ def display_game_stats ( secret, guesses ):
     print ( "Secret:  ", show_word ( secret ) )
     print ( "Guess:   ", show_word ( list ( guesses ) [ -1 ] ) )
     last_key = list ( guesses ) [ -1 ]
-    show_colorized_guess ( guesses [ last_key ] ) # last added dictionary key is our current user guess
+    # last added dictionary key is our current user guess
+    show_colorized_guess ( last_key, guesses [ last_key ] )
     show_colorized_keyboard ( secret, guesses )
 
 
