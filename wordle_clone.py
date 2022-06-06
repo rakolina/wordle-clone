@@ -1,4 +1,4 @@
-# INFINITE WORDLE
+# OPEN WORDLE
 # (no daily limit)
 
 # Select a random five letter secret word that is not a title or a name
@@ -6,14 +6,13 @@
 # Keep asking the user for a valid guess (5 letters)
 # Display scored/colorized guess
 # Display scored/colorized keyboard
-# Ask to quit on empty user input
 # When the secret is found, ask to continue
-# If yes start over
-# If no - dump game stats and quit
+#   If yes start over
+#   If no - dump game stats and quit
 #
 # TODO Next
 # Clear terminal between guesses and display full history each time
-# Duplicate letters
+# Duplicated letters in secret word
 #   when a letter is present in the word twice then colorize at most two duplicate letters in the guess
 #   if three letters - colorize at most three
 #
@@ -37,7 +36,7 @@
 #
 # 
 # score keeping + colors
-#    keep a list of five scores (0-4), the array index represents letter index in the word
+#    keep a list of five scores (array indexes 0-4), the array index represents letter index in the word
 #    walk the user guess and the score list and colorize user guess for output
 #      walk the keyboard,
 #        walk the user guess,
@@ -94,11 +93,14 @@ def show_colorized_guess ( guess, score ):
             print ( "Something went very wrong in show colorized guess method" )
             quit ( )
 
+    # newline after word
+    print ( )
+
 
 # colorize letters green and orange based only on the latest guess
 # colorize red based on all of the guesses
 # Example guesses entry: { 'guess' : { 0:1, 1:0, 2:0, 3:0, 4:0 } }
-TODO need a better letter scoe lookup to colorize the keyboard
+# TODO better letter score lookup to colorize the keyboard
 def show_colorized_keyboard ( secret, guesses ):
     if not secret or not guesses:
         print ( "Something is very wrong in show colorized keyboard" )
@@ -106,24 +108,36 @@ def show_colorized_keyboard ( secret, guesses ):
 
     total_letter_scores = { }
     for guess in guesses:
-        for guess_letter in guess:
+        for i in range ( WORD_LENGTH ):
+            guess_letter = guess [ i ]
             if guess_letter not in total_letter_scores:
                 total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
             else:
-                if total_letter_scores [ guess_letter ] <  guesses [ guess ] [ i ]:
+                if total_letter_scores [ guess_letter ] < guesses [ guess ] [ i ]:
                     total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
 
     # colorized_keyboard = [ ]
     for keyboard_row in KEYBOARD:
         colorized_keyboard_row = [ ]
         for keyboard_letter in keyboard_row:
-            if total_letter_scores [ keyboard_letter ] == Score.HIT:
+            if keyboard_letter not in total_letter_scores.keys( ):
+                colorized_keyboard_row.append ( keyboard_letter )
+            elif total_letter_scores [ keyboard_letter ] == Score.HIT:
                 colorized_keyboard_row.append ( Colorize.GREEN + keyboard_letter + Colorize.END )
             elif total_letter_scores [ keyboard_letter ] == Score.MISS:
                 colorized_keyboard_row.append ( Colorize.YELLOW + keyboard_letter + Colorize.END )
             elif total_letter_scores [ keyboard_letter ] == Score.FAIL:
                 colorized_keyboard_row.append ( Colorize.RED + keyboard_letter + Colorize.END )
-        print ( colorized_keyboard_row )
+
+        display_offset = False
+        for letter in colorized_keyboard_row:
+            if 10 > len ( colorized_keyboard_row ) and not display_offset:
+                display_offset = True
+                for i in range ( 10 - len ( colorized_keyboard_row ) ):
+                    print ( " ", end = "" )
+            print ( letter, end = " " )
+
+        print ( )
 
 
 # select a random five letter secret
@@ -133,7 +147,7 @@ def pick_secret_word ():
     counter = 0
     if 1 == DEBUG:
         # return "aurei"
-        return "ourie"
+        return "train"  # "ourie"
 
     secret_word = random.choice ( ALL_WORDS )
     while len ( secret_word ) != 5 or secret_word.istitle ( ):
@@ -145,8 +159,8 @@ def pick_secret_word ():
 
 
 # handle duplicated letters - version 2
-# count letter occurrences in the secret word
-# and keep track of colorized letters that match in the user guess
+# create a count of dupes and subtract from it when coloring
+# avoid coloring too many/too few matched duplicates
 def score_one_guess ( secret_word, guess_word ):
     letter_occurrence = { }
 
@@ -176,7 +190,11 @@ def score_one_guess ( secret_word, guess_word ):
 
 # user guessed secret - increment user score
 def is_game_over ( secret, guess ):
-    game_over = (secret and guess and secret == guess)
+    if not secret:
+        print ( "Something went very wrong in is game over method" )
+        quit ( )
+
+    game_over = secret == guess
     if game_over:
         global user_score
         user_score = user_score + 1
