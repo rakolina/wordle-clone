@@ -54,6 +54,7 @@ from nltk.tag import pos_tag
 from os import system
 
 MAX_WORD_LENGTH = 5
+MAX_TRIES = 5
 DEBUG = 1
 
 
@@ -123,15 +124,18 @@ def show_colorized_keyboard ( secret, guesses ):
         print ( "Something is very wrong in show colorized keyboard" )
         quit ( )
 
+    # coloring green and yellow is only relevant to the latest guess
+    # the history is useful for marking failed letters
+    # guess letters which are absent from the secret word are colorized red (with lowest score of 0)
     total_letter_scores = { }
-    for guess in guesses:
+    for guess, score in guesses:
         for i in range ( MAX_WORD_LENGTH ):
             guess_letter = guess [ i ]
             if guess_letter not in total_letter_scores:
-                total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
+                total_letter_scores [ guess_letter ] = score [ i ]
             else:
-                if total_letter_scores [ guess_letter ] < guesses [ guess ] [ i ]:
-                    total_letter_scores [ guess_letter ] = guesses [ guess ] [ i ]
+                if total_letter_scores [ guess_letter ] < score [ i ]:
+                    total_letter_scores [ guess_letter ] = score [ i ]
 
     # colorized_keyboard = [ ]
     for keyboard_row in KEYBOARD:
@@ -160,14 +164,14 @@ def show_colorized_keyboard ( secret, guesses ):
 # select a random five letter secret
 # take it down to lower case, even though likely the NLTK data set is already lower case
 # keep count how many tries to find it in the NLP data struct            
-def pick_secret_word ():
+def pick_secret_word ( guesses ):
     counter = 0
     if 0 < DEBUG:
         # return "aurei"
         return "train"  # "ourie"
 
     secret_word = random.choice ( ALL_WORDS )
-    while len ( secret_word ) != 5 or secret_word.istitle ( ):
+    while len ( secret_word ) != 5 or secret_word.istitle ( ) or secret_word in guesses.keys ( ):
         counter += 1
         secret_word = random.choice ( ALL_WORDS )
         if 0 == counter % 10:
@@ -180,6 +184,7 @@ def pick_secret_word ():
 # handle duplicated letters - version 2
 # create a count of dupes and subtract from it when coloring
 # avoid coloring too many/too few matched duplicates
+# return a 2d array [ 'guess word', [ score1, score2, ... score4 ] ]
 def score_one_guess ( secret_word, guess_word ):
     letter_occurrence = { }
 
@@ -193,35 +198,44 @@ def score_one_guess ( secret_word, guess_word ):
         else:
             letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] + 1
 
-    user_guess_score = { }
+    scored_guess = [ guess_word ]
+    # scored_guess.append ( guess_wordF )
+
+    user_guess_score = [ ]
     for i in range ( MAX_WORD_LENGTH ):
         if secret_word [ i ] == guess_word [ i ] and letter_occurrence [ secret_word [ i ] ] > 0:
-            user_guess_score [ i ] = Score.HIT
+            user_guess_score.insert ( i , Score.HIT )
             letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
         elif guess_word [ i ] in secret_word and letter_occurrence [ secret_word [ i ] ] > 0:
-            user_guess_score [ i ] = Score.MISS
+            user_guess_score.insert ( i , Score.MISS )
             letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
         else:
-            user_guess_score [ i ] = Score.FAIL
+            user_guess_score.insert ( i , Score.FAIL )
 
-    return user_guess_score
+    scored_guess.append ( user_guess_score )
+
+    return scored_guess
 
 
 # user guessed secret - increment user score
-def is_game_over ( secret, guess ):
+def is_game_over ( secret, guess, tries ):
     if not secret:
         print ( "Something went very wrong in is game over method" )
         quit ( )
 
-    game_over = secret == guess
-    if game_over:
+    if secret == guess:
         global user_score
-        user_score = user_score + 1
-    return game_over
+        user_score += 1
+
+    elif MAX_TRIES == tries:
+        global robot_score
+        robot_score += 1
+
+    return secret == guess or MAX_TRIES == tries
 
 
 # when user enters empty word score goes to robot
-def ask_user_for_guess ():
+def ask_user_for_guess ( ):
     guess_word = input ( "Your guess: " ).lower ( )
     if not guess_word:
         global robot_score
@@ -247,20 +261,18 @@ def show_word ( word ):
 # python dictionary keys are ordered as of python 3.6 (3.7)
 # This is against the principle of a set (unordered!), but it is very useful to have this additional index
 def display_game_stats ( secret, guesses, history ):
-    if not secret or not guesses:
+    if not secret:
         print ( "Something is very wrong in display game stats method" )
         quit ( )
 
     if 0 < DEBUG:
         print ( "Secret:  ", show_word ( secret ) )
-        print ( "Guess:   ", show_word ( list ( guesses ) [ -1 ] ) )
+        print ( "Guess:   ", show_word ( guesses [ -1 ] [ 0 ] ) )
 
     clear_terminal ( )
     display_guess_history ( history )
 
-    # per python 3.7 the last added key is the current user guess
-    last_key = list ( guesses ) [ -1 ]
-    history.append ( show_colorized_guess ( last_key, guesses [ last_key ] ) )
+    history.append ( show_colorized_guess ( guesses [ -1 ] [ 0 ], guesses [ -1 ] [ 1 ] ) )
     show_colorized_keyboard ( secret, guesses )
 
 
@@ -272,31 +284,54 @@ def display_guess_history ( history ):
     # print ( )
 
 
-def user_wants_to_continue ():
+def user_wants_to_continue ( ):
     continue_game = input ( "Again? (y)/n: " )
     return continue_game in [ "", "Y", "y" ]
 
 
-def finish ():
+def finish ( ):
+    clear_terminal ( )
+
     if user_score > robot_score:
         print ( "You won!" )
     elif user_score == robot_score:
         print ( "It is a tie!" )
     else:
         print ( "You lost." )
+
     print ( "Game score: ", user_score, ":", robot_score )
     print ( "Bye! Play again soon!" )
+
     quit ( )
 
 
-def display_game_banner ():
+def display_game_banner ( ):
+    clear_terminal ( )
     print ( )
-    for s in range ( 3 ):
-        for i in range ( s ):
-            print ( )
-        print ( "Welcome to infinite wordle!" )
-        sleep ( 1 )
-        clear_terminal ( )
+    print ( "***************************************" )
+    print ( "*                                     *" )
+    print ( "*       WELCOME TO OPEN WORDLE!       *" )
+    print ( "*                                     *" )
+    print ( "***************************************" )
+    sleep ( 1 )
+    clear_terminal ( )
+
+
+def display_secret_word_definition ( secret ):
+    print ( "Secret word: ", secret )
+    print ( "Placeholder for wordnet definitions" )
+
+
+def display_all_guesses_this_turn ( history ):
+    for colorized_guess in history:
+        print ( colorized_guess )
+
+
+def display_game_over_data ( secret, history ):
+    clear_terminal ( )
+    print ( "" )
+    display_all_guesses_this_turn ( history )
+    display_secret_word_definition ( secret )
 
 
 ################################################################
@@ -307,17 +342,21 @@ display_game_banner ( )
 
 while True:
 
-    scored_guesses = { }
-    scored_guess_history = [ ]
+    scored_guesses = [ ]
+    colorized_history = [ ]
     user_guess = ""
-    game_secret = pick_secret_word ( )
+    game_secret = pick_secret_word ( scored_guesses )
 
-    while not is_game_over ( game_secret, user_guess ):
+    while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
         user_guess = ask_user_for_guess ( )
-        scored_guesses [ user_guess ] = score_one_guess ( game_secret, user_guess )
-        display_game_stats ( game_secret, scored_guesses, scored_guess_history )
+        scored_guesses.append ( score_one_guess ( game_secret, user_guess ) )
+        display_game_stats ( game_secret, scored_guesses, colorized_history )
 
-    if not user_wants_to_continue ( ):
+    display_game_over_data ( game_secret, colorized_history )
+
+    if user_wants_to_continue ( ):
+        clear_terminal ( )
+    else:
         finish ( )
 
 ################################################################
