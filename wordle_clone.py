@@ -1,7 +1,6 @@
-# OPEN WORDLE
-# (no daily limit)
-
-# Select a random five letter secret word that is not a title or a name
+# OPEN WORDLE without a daily limit
+#
+# Select a random five letter secret word that is not a title or a proper name
 # Ignore case - bring all words to lower case
 # Keep asking the user for a valid guess (5 letters)
 # Display scored/colorized guess
@@ -29,8 +28,6 @@ from time import sleep
 import random
 
 
-MAX_WORD_LENGTH = 5
-MAX_TRIES = 5
 DEBUG = 0
 
 
@@ -47,10 +44,11 @@ class Score:
     FAIL = 0
 
 
+LETTER_PLACEHOLDER = "*"
+
 KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
              [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
-
 
 # game score across all turns
 global user_score
@@ -59,7 +57,7 @@ global robot_score
 robot_score = 0
 
 
-def clear_terminal ( ):
+def clear_terminal ():
     # windows
     if name == 'nt':
         _ = system ( 'cls' )
@@ -68,7 +66,6 @@ def clear_terminal ( ):
         _ = system ( 'clear' )
 
 
-# colorize letter
 def show_colorized_guess ( guess, score ):
     colorized_guess = [ ]
     for i in range ( MAX_WORD_LENGTH ):
@@ -89,18 +86,14 @@ def show_colorized_guess ( guess, score ):
     return colorized_guess
 
 
-# colorize letters green and orange based only on the latest guess
+# colorize letters green and orange based on the last guess
 # colorize red based on all the guesses
-# Example guesses entry: { 'guess' : { 0:1, 1:0, 2:0, 3:0, 4:0 } }
-def show_colorized_keyboard ( secret, guesses ):
-    if not secret or not guesses:
-        print ( "Something is very wrong in show colorized keyboard" )
-        quit ( )
+def show_colorized_keyboard ( guesses = [ ] ):
 
     # previous guesses
     total_letter_scores = { }
     for guess, score in guesses [ : -1 ]:
-        for i in range ( MAX_WORD_LENGTH ):
+        for i in range ( len ( guess ) ):
             guess_letter = guess [ i ]
             if 0 == score [ i ]:
                 if guess_letter not in total_letter_scores:
@@ -109,9 +102,14 @@ def show_colorized_keyboard ( secret, guesses ):
                     if total_letter_scores [ guess_letter ] < score [ i ]:
                         total_letter_scores [ guess_letter ] = score [ i ]
 
-    # latest guess overrides all previous scores
-    guess, score = guesses [ -1 ]
-    for i in range ( MAX_WORD_LENGTH ):
+    # latest guess overrides previous scores
+    if not guesses:
+        guess = ""
+        score = [ ]
+    else:
+        guess, score = guesses [ -1 ]
+
+    for i in range ( len ( guess ) ):
         guess_letter = guess [ i ]
         if guess_letter not in total_letter_scores:
             total_letter_scores [ guess_letter ] = score [ i ]
@@ -145,23 +143,23 @@ def show_colorized_keyboard ( secret, guesses ):
 
 # select a random five letter secret
 # take it down to lower case, even though likely the NLTK data set is already lower case
-# keep count how many tries to find it in the NLP data struct            
-def pick_secret_word ( guesses ):
+def pick_secret_word ( words, lemmas, guesses ):
+
+    if 0 != DEBUG:
+        return "aurei"  # "ourie"
+
+    secret_word = ""
     counter = 0
-    if 0 < DEBUG:
-        return "aurei" # "ourie"
-
-    wn_lemmas = set ( wordnet.all_lemma_names ( ) )
-    secret_word = random.choice ( ALL_WORDS )
-    while len ( secret_word ) != 5 or secret_word.istitle ( ) or secret_word in guesses or secret_word not in wn_lemmas:
+    while secret_word in guesses or secret_word.istitle ( ) or secret_word not in lemmas:
+        secret_word = random.choice ( words )
+        if 0 != DEBUG:
+            print ( secret_word )
         counter += 1
-        secret_word = random.choice ( ALL_WORDS )
-        if 0 == counter % 10:
-            print ( '.', end = ' ' )
 
-    print ( )
-    show_count = Colorize.GREEN + str ( counter ) + Colorize.END
-    print ( "Stats for nerds: picking a secret word took", show_count, "tries" )
+    if 0 != DEBUG:
+        show_count = Colorize.GREEN + str ( counter ) + Colorize.END
+        print ( "Stats for nerds: picking a secret word took", show_count, "tries" )
+
     return secret_word.lower ( )
 
 
@@ -170,8 +168,12 @@ def pick_secret_word ( guesses ):
 # avoid coloring too many/too few matched duplicates
 # return a 2d array [ 'guess word', [ score1, score2, ... score4 ] ]
 def score_one_guess ( secret_word, guess_word ):
+    if len ( secret_word ) != len ( guess_word ):
+        print ( "Secret word and user guess are different length. Exit.")
+        quit ( )
+
     letter_occurrence = { }
-    for i in range ( MAX_WORD_LENGTH ):
+    for i in range ( len ( secret_word ) ):
         if secret_word [ i ] not in letter_occurrence:
             letter_occurrence [ secret_word [ i ] ] = 1
         else:
@@ -179,15 +181,15 @@ def score_one_guess ( secret_word, guess_word ):
 
     scored_guess = [ guess_word ]
     user_guess_score = [ ]
-    for i in range ( MAX_WORD_LENGTH ):
+    for i in range ( len ( secret_word ) ):
         if secret_word [ i ] == guess_word [ i ] and letter_occurrence [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i , Score.HIT )
+            user_guess_score.insert ( i, Score.HIT )
             letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
         elif guess_word [ i ] in secret_word and letter_occurrence [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i , Score.MISS )
+            user_guess_score.insert ( i, Score.MISS )
             letter_occurrence [ secret_word [ i ] ] = letter_occurrence [ secret_word [ i ] ] - 1
         else:
-            user_guess_score.insert ( i , Score.FAIL )
+            user_guess_score.insert ( i, Score.FAIL )
 
     scored_guess.append ( user_guess_score )
 
@@ -200,55 +202,41 @@ def is_game_over ( secret, guess, tries ):
         global user_score
         user_score += 1
 
-    elif MAX_TRIES == tries:
+    elif len ( secret ) == tries:
         global robot_score
         robot_score += 1
 
-    return secret == guess or MAX_TRIES == tries
+    return secret == guess or len ( secret ) == tries
 
 
-# when user enters empty word score goes to robot
-def ask_user_for_guess ( ):
+def ask_user_for_guess ( secret, words, lemmas ):
     guess_word = ""
-    while MAX_WORD_LENGTH != len ( guess_word ) or guess_word not in ALL_WORDS or guess_word.istitle ( ):
+    while len ( guess_word ) != len ( secret ) or guess_word not in words or guess_word.istitle ( ) or guess_word not in lemmas:
         guess_word = input ( "Your guess: " ).lower ( )
 
     return guess_word
-
-
-def show_word ( word ):
-    if word and MAX_WORD_LENGTH == len ( word ):
-        return list ( word )
 
 
 # store scored guesses in a dictionary with guess word as key and list of scores by letter index as value
 # python dictionary keys are ordered as of python 3.6 (3.7)
 # This is against the principle of a set (unordered!), but it is very useful to have this additional index
 def display_game_stats ( secret, guesses, history ):
-    if 0 < DEBUG:
-        print ( "Secret:  ", show_word ( secret ) )
-        print ( "Guess:   ", show_word ( guesses [ -1 ] [ 0 ] ) )
+    if 0 != DEBUG:
+        print ( "Secret:  ", list ( secret ) )
+        print ( "Guess:   ", list ( guesses [ -1 ] [ 0 ] ) )
 
     clear_terminal ( )
-    display_guess_history ( history )
+    display_guess_history ( len ( secret ), history )
     history.append ( show_colorized_guess ( guesses [ -1 ] [ 0 ], guesses [ -1 ] [ 1 ] ) )
-    show_colorized_keyboard ( secret, guesses )
+    show_colorized_keyboard ( guesses )
 
 
-def display_guess_history ( history ):
-    for colorized_guess in history:
-        for colorized_letter in colorized_guess:
-            print ( colorized_letter, end = " " )
-        print ( )
-    # print ( )
-
-
-def user_wants_to_continue ( ):
+def user_wants_to_continue ():
     continue_game = input ( "Play again? (y)/n: " )
     return continue_game in [ "", "Y", "y" ]
 
 
-def finish ( ):
+def finish ():
     clear_terminal ( )
 
     if user_score > robot_score:
@@ -265,12 +253,18 @@ def finish ( ):
 
 
 def display_game_banner ( ):
+    print ( "---------------------------------------" )
+    print ( "|                                     |" )
+    print ( "|       WELCOME TO OPEN WORDLE!       |" )
+    print ( "|                                     |" )
+    print ( "---------------------------------------" )
+
+
+def show_current_game ( secret, guesses = [ ], history = [ ] ):
     clear_terminal ( )
-    print ( " ---------------------------------------" )
-    print ( " |                                     |" )
-    print ( " |       WELCOME TO OPEN WORDLE!       |" )
-    print ( " |                                     |" )
-    print ( " ---------------------------------------" )
+    display_game_banner ( )
+    display_guess_history ( len ( secret ), history )
+    show_colorized_keyboard ( guesses )
 
 
 def display_secret_word_definition ( secret ):
@@ -288,16 +282,20 @@ def display_secret_word_definition ( secret ):
                 print ( '   "', example_sentence, '"', sep = "" )
 
 
-def display_all_guesses_this_turn ( history ):
+def display_guess_history ( max_length, history = [ ] ):
     for colorized_guess in history:
-        for letter in colorized_guess:
-            print ( letter, end = " " )
+        for colorized_letter in colorized_guess:
+            print ( colorized_letter, end = " " )
+        print ( )
+
+    for i in range ( max_length - len ( history ) ):
+        for x in range ( max_length ):
+            print ( LETTER_PLACEHOLDER, end = " " )
         print ( )
 
 
 def display_game_over_data ( secret, history ):
-    clear_terminal ( )
-    display_all_guesses_this_turn ( history )
+    show_current_game ( history )
     display_secret_word_definition ( secret )
 
 
@@ -305,8 +303,10 @@ def display_game_over_data ( secret, history ):
 ############################# MAIN #############################
 ################################################################
 
-# TODO we need all words but wordnet defined ones only
-ALL_WORDS = words.words ( )
+# TODO
+#  can I use the wordnet lemma set only instead of using both sets?
+wn_words = words.words ( )
+wn_lemmas = set ( wordnet.all_lemma_names ( ) )
 
 display_game_banner ( )
 
@@ -315,17 +315,18 @@ while True:
     scored_guesses = [ ]
     colorized_history = [ ]
     user_guess = ""
-    game_secret = pick_secret_word ( scored_guesses )
+    game_secret = pick_secret_word ( wn_words, wn_lemmas, scored_guesses )
+    show_current_game ( game_secret )
 
     while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
-        user_guess = ask_user_for_guess ( )
+        user_guess = ask_user_for_guess ( game_secret, wn_words, wn_lemmas )
         scored_guesses.append ( score_one_guess ( game_secret, user_guess ) )
-        display_game_stats ( game_secret, scored_guesses, colorized_history )
+        show_current_game ( game_secret, scored_guesses, colorized_history )
 
     display_game_over_data ( game_secret, colorized_history )
 
     if user_wants_to_continue ( ):
-        clear_terminal ( )
+        show_current_game ( )
     else:
         finish ( )
 
