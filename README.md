@@ -7,3 +7,8 @@ ASCII clone of wordle game without daily limit.
   <img alt="Game screenshot">
 </picture>
 
+To play install python3, install NLTK
+> python3
+> nltk.download()  ## this opens a popup downloader
+
+
