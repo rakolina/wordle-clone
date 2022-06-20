@@ -1,49 +1,40 @@
 # OPEN WORDLE without a daily limit
 #
-# Select a random five letter secret word that is not a title or a proper name
-# Ignore case - bring all words to lower case
-# Keep asking the user for a valid guess (5 letters)
-# Display scored/colorized guess
-# Display scored/colorized keyboard
-# When the secret is found, ask to continue
-#   If yes start over
-#   If no - dump game stats and quit
-#
-# Duplicated letters in secret word
-#   when a letter is present in the word twice then colorize at most two duplicate letters in the guess
-#   if three letters - colorize at most three
-#
 # TODOs
 #    thread the abysmally slow wordnet lookup, display a UI indicator
-#    thread secret word picking with UI progress indicator
-#    Popup window UI instead of ASCII art in the terminal
+#    thread secret word drawing with UI progress indicator
+#    Popup window UI
 
 
-import nltk
 from nltk.corpus import words
-from nltk.tag import pos_tag
 from nltk.corpus import wordnet
 from os import system, name
-from time import sleep
 import random
 
-DEBUG = 1
-
+# The longest dictionary word according to Wikipedia:
+# "Pneumonoultramicroscopicsilicovolcanoconiosis"
+# 45 letters - the disease silicosis
+class GameMode:
+    EASY        = [  4,  5 ]
+    NORMAL      = [  5, 10 ]
+    ADVANCED    = [ 10, 15 ]
+    EXPERT      = [ 15, 20 ]
+    INSANE      = [ 20, 50 ]
 
 class Colorize:
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    END = '\033[0m'
+    GREEN   = '\033[92m'
+    YELLOW  = '\033[93m'
+    RED     = '\033[91m'
+    END     = '\033[0m'
 
 
 class Score:
-    HIT = 2
-    MISS = 1
-    FAIL = 0
+    HIT     = 2
+    MISS    = 1
+    FAIL    = 0
 
 
-LETTER_PLACEHOLDER = "☐"  # "*"
+LETTER_PLACEHOLDER = "☐"
 
 KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
              [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
@@ -54,6 +45,45 @@ global user_score
 user_score = 0
 global robot_score
 robot_score = 0
+
+
+def ask_for_hardness_level ():
+    print ( "We measure game level by secret word length." )
+    print ( "1. easy:     up to 5 letters." )
+    print ( "2. normal:    5 to 10 letters" )
+    print ( "3. advanced: 10 to 15 letters." )
+    print ( "4. expert:   15 to 20 letters." )
+    print ( "5. insane:   20 letters and above." )
+
+    expected_modes = [ "easy", "normal", "advanced", "expert", "insane", "1", "2", "3", "4", "5", "" ]
+    input_prompt = create_input_prompt ( expected_modes )
+    user_mode = input ( input_prompt ).lower ( )
+    while user_mode not in expected_modes:
+        user_mode = input ( "1 - 5: (2) " ).lower ( )
+
+    if "" == user_mode:
+        return GameMode.NORMAL
+    elif "easy" == user_mode or "1" == user_mode:
+        return GameMode.EASY
+    elif "normal" == user_mode or "2" == user_mode:
+        return GameMode.NORMAL
+    elif "advanced" == user_mode or "3" == user_mode:
+        return GameMode.ADVANCED
+    elif "expert" == user_mode or "4" == user_mode:
+        return GameMode.EXPERT
+    elif "insane" == user_mode or "5" == user_mode:
+        return GameMode.EXPERT
+
+    return user_mode
+
+
+def create_input_prompt ( options ):
+    prefix = "Please indicate "
+    delimiter = '/'
+    prompt = delimiter.join ( filter ( lambda x: len ( x ) > 1, options) )
+    preselected = ": (" + options [ 1 ] + ") "
+
+    return prefix + prompt + preselected
 
 
 def clear_terminal ():
@@ -139,20 +169,21 @@ def display_colorized_keyboard ( guesses ):
 
 # select a random five letter secret
 # take it down to lower case, even though likely the NLTK data set is already lower case
-def draw_secret_word ( words, lemmas, guesses ):
+def draw_secret_word ( game_mode, words, guesses ):
     secret_word = ""
-    counter = 0
-    while secret_word in guesses or secret_word.istitle ( ) or secret_word not in lemmas:
+    while invalid_random_word ( secret_word, guesses, game_mode ):
         secret_word = random.choice ( words )
-        if 0 != DEBUG:
-            print ( secret_word )
-            counter += 1
-
-    if 0 != DEBUG:
-        show_count = Colorize.GREEN + str ( counter ) + Colorize.END
-        print ( "Stats for nerds: picking a secret word took", show_count, "tries" )
 
     return secret_word.lower ( )
+
+
+def invalid_random_word ( secret_word, guesses, game_mode ):
+    lower_limit, upper_limit = game_mode
+    return 0 == len ( secret_word ) \
+           or len ( secret_word ) > upper_limit \
+           or len ( secret_word ) < lower_limit \
+           or secret_word in guesses \
+           or secret_word.istitle ( )
 
 
 # handle duplicated letters - version 2
@@ -188,24 +219,31 @@ def score_one_guess ( secret_word, guess_word ):
     return scored_guess
 
 
-# user guessed secret - increment user score
 def is_game_over ( secret, guess, tries ):
     if secret == guess:
         global user_score
         user_score += 1
-
     elif len ( secret ) == tries:
         global robot_score
         robot_score += 1
-
     return secret == guess or len ( secret ) == tries
 
 
-def ask_user_for_guess ( secret, words, lemmas ):
-    guess_word = ""
-    while len ( guess_word ) != len (
-            secret ) or guess_word not in words or guess_word.istitle ( ) or guess_word not in lemmas:
-        guess_word = input ( "Your guess: " ).lower ( )
+def ask_user_for_guess ( secret, wordlist ):
+    user_prompt = "Your guess: "
+    valid = False
+    while not valid:
+        guess_word = input ( user_prompt ).lower ( )
+        if guess_word not in wordlist:
+            user_prompt = "Try a valid word: "
+        elif guess_word.istitle ( ):
+            user_prompt = "No names or titles: "
+        elif 0 == len ( guess_word ):
+            user_prompt = "Cannot be empty: "
+        elif len ( guess_word ) != len ( secret ):
+            user_prompt = "Try " + str ( len ( secret ) ) + " letters: "
+        else:
+            valid = True
 
     return guess_word
 
@@ -274,23 +312,22 @@ def display_current_turn_end ( secret ):
 ############################# MAIN #############################
 ################################################################
 
+
 # TODO
 #  prepare words lookup instead of using words and lemma sets
 wn_words = words.words ( )
-wn_lemmas = set ( wordnet.all_lemma_names ( ) )
-
 display_game_banner ( )
 
+game_mode = ask_for_hardness_level ( )
 while True:
-
     scored_guesses = [ ]
     colorized_history = [ ]
     user_guess = ""
-    game_secret = draw_secret_word ( wn_words, wn_lemmas, scored_guesses )
+    game_secret = draw_secret_word ( game_mode, wn_words, scored_guesses )
 
     while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
         display_current_game ( game_secret, scored_guesses, colorized_history )
-        user_guess = ask_user_for_guess ( game_secret, wn_words, wn_lemmas )
+        user_guess = ask_user_for_guess ( game_secret, wn_words )
         current_guess_scored = score_one_guess ( game_secret, user_guess )
         scored_guesses.append ( current_guess_scored )
         colorized_history.append ( colorize_one_guess ( current_guess_scored ) )
