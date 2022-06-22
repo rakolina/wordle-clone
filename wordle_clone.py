@@ -6,39 +6,15 @@
 #    Popup window UI
 
 
-from nltk.corpus import words
-from nltk.corpus import wordnet
-from os import system, name
+from nltk.corpus import words, \
+    wordnet
+from os import system, \
+    name
 import random
-
-# The longest dictionary word according to Wikipedia:
-# "Pneumonoultramicroscopicsilicovolcanoconiosis"
-# 45 letters - the disease silicosis
-class GameMode:
-    EASY        = [  4,  5 ]
-    NORMAL      = [  5, 10 ]
-    ADVANCED    = [ 10, 15 ]
-    EXPERT      = [ 15, 20 ]
-    INSANE      = [ 20, 50 ]
-
-class Colorize:
-    GREEN   = '\033[92m'
-    YELLOW  = '\033[93m'
-    RED     = '\033[91m'
-    END     = '\033[0m'
-
-
-class Score:
-    HIT     = 2
-    MISS    = 1
-    FAIL    = 0
-
-
-LETTER_PLACEHOLDER = "☐"
-
-KEYBOARD = [ [ 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p' ],
-             [ 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l' ],
-             [ 'z', 'x', 'c', 'v', 'b', 'n', 'm' ] ]
+import GameMode, \
+    Colorize, \
+    GameScore, \
+    GameConstants
 
 # game score across all turns
 global user_score
@@ -47,43 +23,43 @@ global robot_score
 robot_score = 0
 
 
+# def create_input_prompt ( options ):
+#     prefix = "Play mode: "
+#     delimiter = '/'
+#     prompt = delimiter.join ( filter ( lambda x: len ( x ) > 1, options ) )
+#     preselected = ": (" + options [ 1 ] + ") "
+#
+#     return prefix + prompt + preselected
+
+
 def ask_for_hardness_level ():
     print ( "We measure game level by secret word length." )
-    print ( "1. easy:     up to 5 letters." )
-    print ( "2. normal:    5 to 10 letters" )
-    print ( "3. advanced: 10 to 15 letters." )
-    print ( "4. expert:   15 to 20 letters." )
-    print ( "5. insane:   20 letters and above." )
+    count = 1
+    expected_modes = [ "" ]
+    for label, left, right in GameMode.game_modes:
+        expected_modes.append ( label )
+        expected_modes.append ( str ( count ) )
+        print ( str ( count ) + ". " + label + " mode: between " + str ( left ) + " and " + str ( right ) + " letters." )
+        count += 1
 
-    expected_modes = [ "easy", "normal", "advanced", "expert", "insane", "1", "2", "3", "4", "5", "" ]
-    input_prompt = create_input_prompt ( expected_modes )
-    user_mode = input ( input_prompt ).lower ( )
+    # input_prompt = create_input_prompt ( expected_modes )
+    preselected = "Your choice: (" + expected_modes [ 1 ] + ") "
+    user_mode = input ( preselected ).lower ( )
     while user_mode not in expected_modes:
-        user_mode = input ( "1 - 5: (2) " ).lower ( )
+        user_mode = input ( "1 - 5: (1) " ).lower ( )
 
-    if "" == user_mode:
-        return GameMode.NORMAL
-    elif "easy" == user_mode or "1" == user_mode:
-        return GameMode.EASY
+    if "" == user_mode or "casual" == user_mode or "1" == user_mode:
+        return GameMode.game_modes [ 0 ]
     elif "normal" == user_mode or "2" == user_mode:
-        return GameMode.NORMAL
+        return GameMode.game_modes [ 1 ]
     elif "advanced" == user_mode or "3" == user_mode:
-        return GameMode.ADVANCED
+        return GameMode.game_modes [ 2 ]
     elif "expert" == user_mode or "4" == user_mode:
-        return GameMode.EXPERT
+        return GameMode.game_modes [ 3 ]
     elif "insane" == user_mode or "5" == user_mode:
-        return GameMode.EXPERT
+        return GameMode.game_modes [ 4 ]
 
     return user_mode
-
-
-def create_input_prompt ( options ):
-    prefix = "Please indicate "
-    delimiter = '/'
-    prompt = delimiter.join ( filter ( lambda x: len ( x ) > 1, options) )
-    preselected = ": (" + options [ 1 ] + ") "
-
-    return prefix + prompt + preselected
 
 
 def clear_terminal ():
@@ -99,11 +75,11 @@ def colorize_one_guess ( scored_guess ):
     guess, score = scored_guess
     colorized_guess = [ ]
     for i in range ( len ( guess ) ):
-        if Score.HIT == score [ i ]:
+        if GameScore.HIT == score [ i ]:
             colorized_letter = Colorize.GREEN + guess [ i ] + Colorize.END
-        elif Score.MISS == score [ i ]:
+        elif GameScore.MISS == score [ i ]:
             colorized_letter = Colorize.YELLOW + guess [ i ] + Colorize.END
-        elif Score.FAIL == score [ i ]:
+        elif GameScore.FAIL == score [ i ]:
             colorized_letter = Colorize.RED + guess [ i ] + Colorize.END
         else:
             print ( "Something went very wrong in show colorized guess method" )
@@ -144,16 +120,16 @@ def display_colorized_keyboard ( guesses ):
                 total_letter_scores [ guess_letter ] = score [ i ]
 
     print ( )
-    for keyboard_row in KEYBOARD:
+    for keyboard_row in GameConstants.KEYBOARD:
         colorized_keyboard_row = [ ]
         for keyboard_letter in keyboard_row:
             if keyboard_letter not in total_letter_scores.keys ( ):
                 colorized_keyboard_row.append ( keyboard_letter )
-            elif total_letter_scores [ keyboard_letter ] == Score.HIT:
+            elif total_letter_scores [ keyboard_letter ] == GameScore.HIT:
                 colorized_keyboard_row.append ( Colorize.GREEN + keyboard_letter + Colorize.END )
-            elif total_letter_scores [ keyboard_letter ] == Score.MISS:
+            elif total_letter_scores [ keyboard_letter ] == GameScore.MISS:
                 colorized_keyboard_row.append ( Colorize.YELLOW + keyboard_letter + Colorize.END )
-            elif total_letter_scores [ keyboard_letter ] == Score.FAIL:
+            elif total_letter_scores [ keyboard_letter ] == GameScore.FAIL:
                 colorized_keyboard_row.append ( Colorize.RED + keyboard_letter + Colorize.END )
 
         display_offset = False
@@ -161,8 +137,8 @@ def display_colorized_keyboard ( guesses ):
             if 10 > len ( colorized_keyboard_row ) and not display_offset:
                 display_offset = True
                 for i in range ( 10 - len ( colorized_keyboard_row ) ):
-                    print ( ' ', end='' )
-            print ( letter, end=' ' )
+                    print ( ' ', end = '' )
+            print ( letter, end = ' ' )
         print ( )
     print ( )
 
@@ -178,7 +154,7 @@ def draw_secret_word ( game_mode, words, guesses ):
 
 
 def invalid_random_word ( secret_word, guesses, game_mode ):
-    lower_limit, upper_limit = game_mode
+    label, lower_limit, upper_limit = game_mode
     return 0 == len ( secret_word ) \
            or len ( secret_word ) > upper_limit \
            or len ( secret_word ) < lower_limit \
@@ -206,13 +182,13 @@ def score_one_guess ( secret_word, guess_word ):
     user_guess_score = [ ]
     for i in range ( len ( secret_word ) ):
         if secret_word [ i ] == guess_word [ i ] and secret_letters_occurrences [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i, Score.HIT )
+            user_guess_score.insert ( i, GameScore.HIT )
             secret_letters_occurrences [ secret_word [ i ] ] = secret_letters_occurrences [ secret_word [ i ] ] - 1
         elif guess_word [ i ] in secret_word and secret_letters_occurrences [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i, Score.MISS )
+            user_guess_score.insert ( i, GameScore.MISS )
             secret_letters_occurrences [ secret_word [ i ] ] = secret_letters_occurrences [ secret_word [ i ] ] - 1
         else:
-            user_guess_score.insert ( i, Score.FAIL )
+            user_guess_score.insert ( i, GameScore.FAIL )
 
     scored_guess.append ( user_guess_score )
 
@@ -268,17 +244,20 @@ def display_game_over_data ():
     quit ( )
 
 
-def display_game_banner ():
+def display_game_banner ( mode ):
+    label, left, right = mode
     print ( "---------------------------------------" )
     print ( "|                                     |" )
-    print ( "|       WELCOME TO OPEN WORDLE!       |" )
+    print ( "|   WELCOME TO OPEN WORDLE!           |" )
+    print ( "|   MODE: " + label.upper() + " (" + str ( left ) + " - " + str ( right ) + " letters)")
     print ( "|                                     |" )
     print ( "---------------------------------------" )
+    print (  )
 
 
-def display_current_game ( secret, guesses, history ):
+def display_updated_game ( secret, guesses, history, mode ):
     clear_terminal ( )
-    display_game_banner ( )
+    display_game_banner ( mode )
     display_guess_history ( len ( secret ), history )
     display_colorized_keyboard ( guesses )
 
@@ -286,37 +265,36 @@ def display_current_game ( secret, guesses, history ):
 def display_guess_history ( max_length, history ):
     for colorized_guess in history:
         for colorized_letter in colorized_guess:
-            print ( colorized_letter, end=" " )
+            print ( colorized_letter, end = " " )
         print ( )
 
     for i in range ( max_length - len ( history ) ):
         for x in range ( max_length ):
-            print ( LETTER_PLACEHOLDER, end=" " )
+            print ( GameConstants.LETTER_PLACEHOLDER, end = " " )
         print ( )
 
 
 # TODO
 #  use formatted string or string padding methods
 def display_current_turn_end ( secret ):
-    print ( "The secret word is ", secret, "!", sep="" )
+    print ( "The secret word is ", secret, "!", sep = "" )
     wordnet_data = wordnet.synsets ( secret )
     counter = 1
     for definition in wordnet_data:
-        print ( counter, ": ", definition.definition ( ), sep="" )
+        print ( counter, ": ", definition.definition ( ), sep = "" )
         for example_sentence in definition.examples ( ):
-            print ( '   "', example_sentence, '"', sep="" )
+            print ( '   "', example_sentence, '"', sep = "" )
         counter += 1
 
 
-################################################################
-############################# MAIN #############################
-################################################################
-
+#############################################################################################
+# MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN #
+#############################################################################################
 
 # TODO
 #  prepare words lookup instead of using words and lemma sets
 wn_words = words.words ( )
-display_game_banner ( )
+filtered_words = filter ( lambda x: GameConstants.MINIMUM_LENGTH < len ( x ), wn_words )
 
 game_mode = ask_for_hardness_level ( )
 while True:
@@ -326,16 +304,16 @@ while True:
     game_secret = draw_secret_word ( game_mode, wn_words, scored_guesses )
 
     while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
-        display_current_game ( game_secret, scored_guesses, colorized_history )
+        display_updated_game ( game_secret, scored_guesses, colorized_history, game_mode )
         user_guess = ask_user_for_guess ( game_secret, wn_words )
         current_guess_scored = score_one_guess ( game_secret, user_guess )
         scored_guesses.append ( current_guess_scored )
         colorized_history.append ( colorize_one_guess ( current_guess_scored ) )
 
-    display_current_game ( game_secret, scored_guesses, colorized_history )
+    display_updated_game ( game_secret, scored_guesses, colorized_history, game_mode )
     display_current_turn_end ( game_secret )
 
     if not user_wants_to_continue ( ):
-        display_current_game ( game_secret, scored_guesses, colorized_history )
+        display_updated_game ( game_secret, scored_guesses, colorized_history, game_mode )
         display_current_turn_end ( game_secret )
         display_game_over_data ( )
