@@ -316,9 +316,8 @@ def acceptable ( game_stopwords, wn_lemmas, word ):
 # MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN #
 #############################################################################################
 
-
 # TODO
-#  prepare words lookup instead of using words and lemma sets
+#  separate data prep thread and the UI thread
 game_wordset = prepare_secret_word_lookup ( )
 game_mode = ask_for_hardness_level ( )
 while True:
