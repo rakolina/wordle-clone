@@ -23,19 +23,11 @@ global robot_score
 robot_score = 0
 
 
-# def create_input_prompt ( options ):
-#     prefix = "Play mode: "
-#     delimiter = '/'
-#     prompt = delimiter.join ( filter ( lambda x: len ( x ) > 1, options ) )
-#     preselected = ": (" + options [ 1 ] + ") "
-#
-#     return prefix + prompt + preselected
-
-
 def ask_for_hardness_level ():
-    print ( "We measure game level by secret word length." )
+    clear_terminal ( )
+    print ( "Choose secret word length:" )
     count = 1
-    expected_modes = [ "" ]
+    expected_modes = [ "" ]  ## allow hitting enter to cnfirm preselected hardness level
     for label, left, right in GameMode.game_modes:
         expected_modes.append ( label )
         expected_modes.append ( str ( count ) )
@@ -245,14 +237,17 @@ def display_game_over_data ():
 
 
 def display_game_banner ( mode ):
+    banner_width = 40
+    frame = "".join ( [ GameConstants.LETTER_PLACEHOLDER for i in range ( banner_width ) ] )
+    welcome = "WELCOME TO OPEN WORDLE!"
     label, left, right = mode
-    print ( "---------------------------------------" )
-    print ( "|                                     |" )
-    print ( "|   WELCOME TO OPEN WORDLE!           |" )
-    print ( "|   MODE: " + label.upper() + " (" + str ( left ) + " - " + str ( right ) + " letters)")
-    print ( "|                                     |" )
-    print ( "---------------------------------------" )
-    print (  )
+    game_mode_label = "MODE: " + label.upper() + " (" + str ( left ) + " - " + str ( right ) + " letters)"
+
+    print ( frame )
+    print ( GameConstants.LETTER_PLACEHOLDER, welcome.center ( banner_width - 2 ), GameConstants.LETTER_PLACEHOLDER, sep="" )
+    print ( GameConstants.LETTER_PLACEHOLDER, game_mode_label.center ( banner_width - 2 ), GameConstants.LETTER_PLACEHOLDER, sep="" )
+    print ( frame )
+    print ( )
 
 
 def display_updated_game ( secret, guesses, history, mode ):
