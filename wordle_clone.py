@@ -75,8 +75,7 @@ def colorize_one_guess ( scored_guess ):
         elif GameScore.FAIL == score [ i ]:
             colorized_letter = Colorize.RED + guess [ i ] + Colorize.END
         else:
-            print ( "Something went very wrong in show colorized guess method" )
-            quit ( )
+            colorized_letter = guess [ i ]
         colorized_guess.append ( colorized_letter )
 
     return colorized_guess
@@ -139,6 +138,9 @@ def display_colorized_keyboard ( guesses ):
 # select a random five letter secret
 # take it down to lower case, even though likely the NLTK data set is already lower case
 def draw_secret_word ( game_mode, words, guesses ):
+
+    # return "guest"
+
     secret_word = ""
     while invalid_random_word ( secret_word, guesses, game_mode ):
         secret_word = random.choice ( words )
@@ -156,7 +158,7 @@ def invalid_random_word ( secret_word, guesses, game_mode ):
 
 # handle duplicated letters - version 2
 # create a count of dupes and subtract from it when coloring
-# avoid coloring too many/too few matched duplicates
+# avoid coloring too many/too few matched letters
 # return a 2d array [ 'guess word', [ score1, score2, ... score4 ] ]
 def score_one_guess ( secret_word, guess_word ):
     if len ( secret_word ) != len ( guess_word ):
@@ -173,14 +175,21 @@ def score_one_guess ( secret_word, guess_word ):
     scored_guess = [ guess_word ]
     user_guess_score = [ ]
     for i in range ( len ( secret_word ) ):
-        if secret_word [ i ] == guess_word [ i ] and secret_letters_occurrences [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i, GameScore.HIT )
-            secret_letters_occurrences [ secret_word [ i ] ] = secret_letters_occurrences [ secret_word [ i ] ] - 1
-        elif guess_word [ i ] in secret_word and secret_letters_occurrences [ secret_word [ i ] ] > 0:
-            user_guess_score.insert ( i, GameScore.MISS )
-            secret_letters_occurrences [ secret_word [ i ] ] = secret_letters_occurrences [ secret_word [ i ] ] - 1
-        else:
+        # letter at index i is not found in the secret word at all
+        if guess_word [ i ] not in secret_word:
             user_guess_score.insert ( i, GameScore.FAIL )
+        # letter at index i is a match to letter at ndex i in secret word
+        elif secret_word [ i ] == guess_word [ i ] and secret_letters_occurrences [ guess_word [ i ] ] > 0:
+            user_guess_score.insert ( i, GameScore.HIT )
+            secret_letters_occurrences [ guess_word [ i ] ] = secret_letters_occurrences [ guess_word [ i ] ] - 1
+        # letter at index i is not a match with letter at i in secret word
+        # but it is found in the secret word at another location
+        elif guess_word [ i ] in secret_word and secret_letters_occurrences [ guess_word [ i ] ] > 0:
+            user_guess_score.insert ( i, GameScore.MISS )
+            secret_letters_occurrences [ guess_word [ i ] ] = secret_letters_occurrences [ guess_word [ i ] ] - 1
+        else:
+            # do nothing do not light another duplicated letter because it has already been indicated
+            user_guess_score.insert ( i, GameScore.IGNORE )
 
     scored_guess.append ( user_guess_score )
 

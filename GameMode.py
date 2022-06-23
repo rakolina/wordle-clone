@@ -3,7 +3,7 @@
 # 45 letters - the disease silicosis
 
 game_modes = [ [ "casual", 4, 5 ],
-              [ "normal", 5, 10 ],
-              [ "advanced", 10, 15 ],
-              [ "expert", 15, 20 ],
-              [ "insane", 20, 50 ] ]
+              [ "normal", 6, 10 ],
+              [ "advanced", 11, 15 ],
+              [ "expert", 16, 20 ],
+              [ "insane", 21, 50 ] ]
