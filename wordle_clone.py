@@ -6,7 +6,8 @@
 #    Popup window UI
 
 
-from nltk.corpus import words, \
+from nltk.corpus import stopwords, \
+    words, \
     wordnet
 from os import system, \
     name
@@ -150,8 +151,7 @@ def invalid_random_word ( secret_word, guesses, game_mode ):
     return 0 == len ( secret_word ) \
            or len ( secret_word ) > upper_limit \
            or len ( secret_word ) < lower_limit \
-           or secret_word in guesses \
-           or secret_word.istitle ( )
+           or secret_word in guesses
 
 
 # handle duplicated letters - version 2
@@ -271,36 +271,65 @@ def display_guess_history ( max_length, history ):
 
 # TODO
 #  use formatted string or string padding methods
+# from itertools import chain
+# from nltk.corpus import wordnet
+#
+# synonyms = wordnet.synsets(text)
+# lemmas = set(chain.from_iterable([word.lemma_names() for word in synonyms]))
 def display_current_turn_end ( secret ):
     print ( "The secret word is ", secret, "!", sep = "" )
-    wordnet_data = wordnet.synsets ( secret )
+    wn_synonyms = wordnet.synsets ( secret )
     counter = 1
-    for definition in wordnet_data:
-        print ( counter, ": ", definition.definition ( ), sep = "" )
-        for example_sentence in definition.examples ( ):
+    for syn in wn_synonyms:
+        print ( counter, ": ", syn.definition ( ), sep = "" )
+        for example_sentence in syn.examples ( ):
             print ( '   "', example_sentence, '"', sep = "" )
         counter += 1
+
+
+# get a set of words
+# prune stopwords
+# prune titles
+# prune very short words
+# prune out words not defined in nltk
+# TODO
+#    use better word definiton lookup
+def prepare_secret_word_lookup ():
+    game_lookup = []
+    game_stopwords = stopwords.words ( GameConstants.EN )
+    wn_lemmas = set ( wordnet.all_lemma_names ( ) )
+    wn_words = words.words ( )
+    for word in wn_words:
+        if acceptable ( game_stopwords, wn_lemmas, word ):
+            game_lookup.append ( word )
+    return game_lookup
+
+
+def acceptable ( game_stopwords, wn_lemmas, word ):
+    return word in wn_lemmas \
+           and not word.istitle ( ) \
+           and word not in game_stopwords \
+           and GameConstants.MINIMUM_LENGTH < len ( word )
 
 
 #############################################################################################
 # MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN #
 #############################################################################################
 
+
 # TODO
 #  prepare words lookup instead of using words and lemma sets
-wn_words = words.words ( )
-filtered_words = filter ( lambda x: GameConstants.MINIMUM_LENGTH < len ( x ), wn_words )
-
+game_wordset = prepare_secret_word_lookup ( )
 game_mode = ask_for_hardness_level ( )
 while True:
     scored_guesses = [ ]
     colorized_history = [ ]
     user_guess = ""
-    game_secret = draw_secret_word ( game_mode, wn_words, scored_guesses )
+    game_secret = draw_secret_word ( game_mode, game_wordset, scored_guesses )
 
     while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
         display_updated_game ( game_secret, scored_guesses, colorized_history, game_mode )
-        user_guess = ask_user_for_guess ( game_secret, wn_words )
+        user_guess = ask_user_for_guess ( game_secret, game_wordset )
         current_guess_scored = score_one_guess ( game_secret, user_guess )
         scored_guesses.append ( current_guess_scored )
         colorized_history.append ( colorize_one_guess ( current_guess_scored ) )
