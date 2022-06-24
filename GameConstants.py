@@ -1,6 +1,8 @@
 # Organize constant values away from the main file
 
-LETTER_PLACEHOLDER = "☐"
+BOX = "☐"
+
+WELCOME = "WELCOMETO OPEN WORDLE"
 
 MINIMUM_LENGTH = 4
 

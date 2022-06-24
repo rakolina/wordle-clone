@@ -28,7 +28,7 @@ def ask_for_hardness_level ():
     clear_terminal ( )
     print ( "Choose secret word length:" )
     count = 1
-    expected_modes = [ "" ]  ## allow hitting enter to cnfirm preselected hardness level
+    expected_modes = [ "" ]  ## allow confirming with enter for preselected casual hardness level
     for label, left, right in GameMode.game_modes:
         expected_modes.append ( label )
         expected_modes.append ( str ( count ) )
@@ -226,6 +226,7 @@ def ask_user_for_guess ( secret, wordlist ):
 
 
 def user_wants_to_continue ():
+    print ( )
     continue_game = input ( "Play again? (y)/n: " )
     return continue_game in [ "", "Y", "y" ]
 
@@ -246,15 +247,14 @@ def display_game_over_data ():
 
 
 def display_game_banner ( mode ):
-    banner_width = 40
-    frame = "".join ( [ GameConstants.LETTER_PLACEHOLDER for i in range ( banner_width ) ] )
-    welcome = "WELCOME TO OPEN WORDLE!"
+    banner_width = 36
+    frame = "".join ( [ GameConstants.BOX for i in range ( banner_width ) ] )
     label, left, right = mode
-    game_mode_label = "MODE: " + label.upper() + " (" + str ( left ) + " - " + str ( right ) + " letters)"
+    game_mode_label = label.upper() + " (" + str ( left ) + " - " + str ( right ) + " letters)"
 
     print ( frame )
-    print ( GameConstants.LETTER_PLACEHOLDER, welcome.center ( banner_width - 2 ), GameConstants.LETTER_PLACEHOLDER, sep="" )
-    print ( GameConstants.LETTER_PLACEHOLDER, game_mode_label.center ( banner_width - 2 ), GameConstants.LETTER_PLACEHOLDER, sep="" )
+    print ( GameConstants.BOX, GameConstants.WELCOME.center ( banner_width - 2 ), GameConstants.BOX, sep="" )
+    print ( GameConstants.BOX, game_mode_label.center ( banner_width - 2 ), GameConstants.BOX, sep="" )
     print ( frame )
     print ( )
 
@@ -274,15 +274,13 @@ def display_guess_history ( max_length, history ):
 
     for i in range ( max_length - len ( history ) ):
         for x in range ( max_length ):
-            print ( GameConstants.LETTER_PLACEHOLDER, end = " " )
+            print ( GameConstants.BOX, end = " " )
         print ( )
 
 
 # TODO
 #  use formatted string or string padding methods
 # from itertools import chain
-# from nltk.corpus import wordnet
-#
 # synonyms = wordnet.synsets(text)
 # lemmas = set(chain.from_iterable([word.lemma_names() for word in synonyms]))
 def display_current_turn_end ( secret ):
@@ -302,7 +300,11 @@ def display_current_turn_end ( secret ):
 # prune very short words
 # prune out words not defined in nltk
 # TODO
-#    use better word definiton lookup
+#    need more data!
+#    better word definitions,
+#    synonyms,
+#    maybe antonyms
+#    what else?
 def prepare_secret_word_lookup ():
     game_lookup = []
     game_stopwords = stopwords.words ( GameConstants.EN )
