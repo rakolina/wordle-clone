@@ -156,10 +156,11 @@ def invalid_random_word ( secret_word, guesses, game_mode ):
            or secret_word in guesses
 
 
-# handle duplicated letters - version 2
-# create a count of dupes and subtract from it when coloring
-# avoid coloring too many/too few matched letters
-# return a 2d array [ 'guess word', [ score1, score2, ... score4 ] ]
+# handle duplicated letters - version 3
+# create a count of dupes and subtract from it when scoring
+# that way we do not light up an instance of a letter if it has already been indicated
+# avoid scoring too many/too few matches
+#   example row: [ 'guess word', [ score1, score2, ... score4 ] ]
 def score_one_guess ( secret_word, guess_word ):
     if len ( secret_word ) != len ( guess_word ):
         print ( "Secret word and user guess are different length. Exit." )
@@ -175,21 +176,25 @@ def score_one_guess ( secret_word, guess_word ):
     scored_guess = [ guess_word ]
     user_guess_score = [ ]
     for i in range ( len ( secret_word ) ):
+        user_guess_score.insert(i, GameScore.IGNORE)
+
+    for i in range ( len ( secret_word ) ):
         # letter at index i is not found in the secret word at all
         if guess_word [ i ] not in secret_word:
-            user_guess_score.insert ( i, GameScore.FAIL )
-        # letter at index i is a match to letter at ndex i in secret word
-        elif secret_word [ i ] == guess_word [ i ] and secret_letters_occurrences [ guess_word [ i ] ] > 0:
-            user_guess_score.insert ( i, GameScore.HIT )
+            user_guess_score [ i ] = GameScore.FAIL
+
+    for i in range ( len ( secret_word ) ):
+        # letter at index i is a match to letter at index i in secret word
+        if secret_word [ i ] == guess_word [ i ] and secret_letters_occurrences [ guess_word [ i ] ] > 0:
+            user_guess_score [ i ] = GameScore.HIT
             secret_letters_occurrences [ guess_word [ i ] ] = secret_letters_occurrences [ guess_word [ i ] ] - 1
+
+    for i in range ( len ( secret_word ) ):
         # letter at index i is not a match with letter at i in secret word
         # but it is found in the secret word at another location
-        elif guess_word [ i ] in secret_word and secret_letters_occurrences [ guess_word [ i ] ] > 0:
-            user_guess_score.insert ( i, GameScore.MISS )
+        if guess_word [ i ] in secret_word and secret_letters_occurrences [ guess_word [ i ] ] > 0:
+            user_guess_score [ i ] = GameScore.MISS
             secret_letters_occurrences [ guess_word [ i ] ] = secret_letters_occurrences [ guess_word [ i ] ] - 1
-        else:
-            # do nothing do not light another duplicated letter because it has already been indicated
-            user_guess_score.insert ( i, GameScore.IGNORE )
 
     scored_guess.append ( user_guess_score )
 
@@ -211,14 +216,15 @@ def ask_user_for_guess ( secret, wordlist ):
     valid = False
     while not valid:
         guess_word = input ( user_prompt ).lower ( )
-        if guess_word not in wordlist:
-            user_prompt = "Try a valid word: "
-        elif guess_word.istitle ( ):
-            user_prompt = "No names or titles: "
-        elif 0 == len ( guess_word ):
-            user_prompt = "Cannot be empty: "
-        elif len ( guess_word ) != len ( secret ):
+
+        if 0 == len ( guess_word ):
             user_prompt = "Try " + str ( len ( secret ) ) + " letters: "
+        elif len ( guess_word ) > len ( secret ):
+            user_prompt = "Too long! Try " + str ( len ( secret ) ) + " letters: "
+        elif len ( guess_word ) < len ( secret ):
+            user_prompt = "Too short! Try " + str ( len ( secret ) ) + " letters: "
+        elif guess_word not in wordlist:
+            user_prompt = "Try a valid word: "
         else:
             valid = True
 
@@ -298,6 +304,7 @@ def display_current_turn_end ( secret ):
 # prune stopwords
 # prune titles
 # prune very short words
+# prune very common words
 # prune out words not defined in nltk
 # TODO
 #    need more data!
@@ -305,21 +312,22 @@ def display_current_turn_end ( secret ):
 #    synonyms,
 #    maybe antonyms
 #    what else?
-def prepare_secret_word_lookup ():
+def prepare_secret_word_lookup ( wn_words ):
     game_lookup = []
     game_stopwords = stopwords.words ( GameConstants.EN )
+    common_words = words.words ( GameConstants.EN_BASIC )
     wn_lemmas = set ( wordnet.all_lemma_names ( ) )
-    wn_words = words.words ( )
     for word in wn_words:
-        if acceptable ( game_stopwords, wn_lemmas, word ):
+        if acceptable ( word, common_words, game_stopwords, wn_lemmas ):
             game_lookup.append ( word )
     return game_lookup
 
 
-def acceptable ( game_stopwords, wn_lemmas, word ):
+def acceptable ( word, common_words, game_stopwords, wn_lemmas ):
     return word in wn_lemmas \
            and not word.istitle ( ) \
            and word not in game_stopwords \
+           and word not in common_words \
            and GameConstants.MINIMUM_LENGTH < len ( word )
 
 
@@ -329,7 +337,8 @@ def acceptable ( game_stopwords, wn_lemmas, word ):
 
 # TODO
 #  separate data prep thread and the UI thread
-game_wordset = prepare_secret_word_lookup ( )
+wn_words = words.words ( )
+game_wordset = prepare_secret_word_lookup ( wn_words )
 game_mode = ask_for_hardness_level ( )
 while True:
     scored_guesses = [ ]
@@ -339,7 +348,7 @@ while True:
 
     while not is_game_over ( game_secret, user_guess, len ( scored_guesses ) ):
         display_updated_game ( game_secret, scored_guesses, colorized_history, game_mode )
-        user_guess = ask_user_for_guess ( game_secret, game_wordset )
+        user_guess = ask_user_for_guess ( game_secret, wn_words )
         current_guess_scored = score_one_guess ( game_secret, user_guess )
         scored_guesses.append ( current_guess_scored )
         colorized_history.append ( colorize_one_guess ( current_guess_scored ) )
