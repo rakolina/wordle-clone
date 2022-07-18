@@ -22,7 +22,8 @@ global user_score
 user_score = 0
 global robot_score
 robot_score = 0
-
+global game_words
+game_words = []
 
 def ask_for_hardness_level ():
     clear_terminal ( )
@@ -145,6 +146,7 @@ def draw_secret_word ( game_mode, words, guesses ):
     while invalid_random_word ( secret_word, guesses, game_mode ):
         secret_word = random.choice ( words )
 
+    game_words.append( secret_word )
     return secret_word.lower ( )
 
 
@@ -246,6 +248,8 @@ def display_game_over_data ():
     else:
         print ( "Sorry, you LOST." )
 
+    print ( "Words: ", end='')
+    print ( *game_words, sep = ', ' )
     print ( "Game score", user_score, ":", robot_score )
     print ( "Play again soon!" )
 
