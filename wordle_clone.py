@@ -5,7 +5,7 @@
 #    thread secret word drawing with UI progress indicator
 #    Popup window UI
 
-
+import sys
 import nltk
 # This ensures the game downloads the required word lists on the first run
 try:
@@ -177,7 +177,7 @@ def invalid_random_word ( secret_word, guesses, game_mode ):
 def score_one_guess ( secret_word, guess_word ):
     if len ( secret_word ) != len ( guess_word ):
         print ( "Secret word and user guess are different length. Exit." )
-        quit ( )
+        sys.exit ( )
 
     secret_letters_occurrences = { }
     for i in range ( len ( secret_word ) ):
@@ -259,12 +259,12 @@ def display_game_over_data ():
     else:
         print ( "Sorry, you LOST." )
 
-    print ( "Words: ", end='')
+    print ( "Words: ", end = '' )
     print ( *game_words, sep = ', ' )
     print ( "Game score", user_score, ":", robot_score )
     print ( "Play again soon!" )
 
-    quit ( )
+    sys.exit ( )
 
 
 def display_game_banner ( mode ):
