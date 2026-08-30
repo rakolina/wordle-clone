@@ -6,6 +6,17 @@
 #    Popup window UI
 
 
+import nltk
+# This ensures the game downloads the required word lists on the first run
+try:
+    nltk.data.find('corpora/stopwords')
+    nltk.data.find('corpora/words')
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('stopwords')
+    nltk.download('words')
+    nltk.download('wordnet')
+
 from nltk.corpus import stopwords, \
     words, \
     wordnet
