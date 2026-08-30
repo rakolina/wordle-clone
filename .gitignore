@@ -1,5 +1,5 @@
-    dist/
-    build/
-    *.spec
-    __pycache__/
-    .DS_Store
+dist/
+build/
+*.spec
+__pycache__/
+.DS_Store
